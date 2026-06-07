@@ -220,7 +220,10 @@ __marimo__/
 data/
 !backend/app/data/
 !backend/app/data/**
-venv/
+
+# Vuelve a silenciar la caché que el ** acaba de resucitar
+backend/app/data/**/__pycache__/
+backend/app/data/**/*.pyc
 
 # =========================
 # Node.js / React (Frontend)
