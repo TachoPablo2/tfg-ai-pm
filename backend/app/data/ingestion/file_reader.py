@@ -1,6 +1,7 @@
 import pandas as pd
 import io
 from fastapi import UploadFile, HTTPException
+from fastapi.concurrency import run_in_threadpool
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,8 @@ class JiraFileReader:
     @staticmethod
     async def leer_archivo(archivo: UploadFile) -> pd.DataFrame:
         """
-        Detecta la extensión y lee el archivo (CSV o Excel) a DataFrame.
+        Detecta la extensión y lee el archivo (CSV o Excel) a DataFrame
+        sin bloquear el Event Loop de FastAPI.
         """
         logger.info(f"Ingestando archivo: {archivo.filename}")
         
@@ -29,12 +31,11 @@ class JiraFileReader:
             contenido = await archivo.read()
             buffer = io.BytesIO(contenido)
             
-            # 2. Lógica de lectura condicional
+            # 2. Lógica de lectura condicional en hilo secundario
             if extension == 'csv':
-                df = pd.read_csv(buffer)
+                df = await run_in_threadpool(pd.read_csv, buffer)
             else:
-                # Pandas usa openpyxl internamente para xlsx
-                df = pd.read_excel(buffer)
+                df = await run_in_threadpool(pd.read_excel, buffer)
             
             if df.empty:
                 raise HTTPException(status_code=400, detail="El archivo está vacío.")

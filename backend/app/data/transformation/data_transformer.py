@@ -1,14 +1,14 @@
 import pandas as pd
 import logging
 
-# Configuramos un logger básico para el TFG, para tener trazabilidad en consola
+# Configuramos un logger básico para tener trazabilidad en consola
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class JiraTransformer:
     """
     Transformador de datos para Jira.
-    Convierte exportaciones crudas (CSV) en tensores de entrada para XGBoost.
+    Convierte exportaciones crudas (CSV/Excel) en tensores de entrada para XGBoost.
     
     Implementa:
     1. Mapeo semántico de columnas.
@@ -37,6 +37,8 @@ class JiraTransformer:
             df['Created'] = pd.to_datetime(df['Created'], errors='coerce')
             df['Resolved'] = pd.to_datetime(df['Resolved'], errors='coerce')
             df['Resolution_Time_Minutes'] = (df['Resolved'] - df['Created']).dt.total_seconds() / 60
+            # FIX: Evitar NaNs por fechas inválidas o nulas
+            df['Resolution_Time_Minutes'] = df['Resolution_Time_Minutes'].fillna(0.0)
         else:
             df['Resolution_Time_Minutes'] = 0.0
 
@@ -66,6 +68,10 @@ class JiraTransformer:
         for col, valor_defecto in columnas_auditoria.items():
             if col not in df.columns:
                 df[col] = valor_defecto
+                
+        # FIX: Forzar el tipado a entero para curarnos en salud con Pydantic
+        df['Sprint_ID'] = df['Sprint_ID'].fillna(0).astype(int)
+        df['Project_ID'] = df['Project_ID'].fillna(0).astype(int)
                 
         logger.info(f"Transformación completada. Columnas procesadas: {df.shape[1]}")
         return df
