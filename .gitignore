@@ -216,7 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Ignora la carpeta data general, pero permite la de backend
 data/
+!backend/app/data/
+!backend/app/data/**
 venv/
 
 # =========================

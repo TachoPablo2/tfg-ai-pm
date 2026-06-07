@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# 👇 1. NUEVA IMPORTACIÓN: Traemos las rutas desde la nueva estructura
+from app.api.routers.analyze import router as api_router
+
 # Inicializamos la API
 app = FastAPI(
     title="AI Project Management Assistant",
@@ -24,3 +27,6 @@ def health_check():
         "status": "online", 
         "mensaje": "El motor de inferencia de IA está listo para recibir proyectos."
     }
+
+# 👇 2. NUEVO ENGANCHE: Conectamos las rutas bajo el prefijo /api
+app.include_router(api_router, prefix="/api")
