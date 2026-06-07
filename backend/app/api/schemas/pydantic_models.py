@@ -28,10 +28,14 @@ class TaskRecord(BaseModel):
 class TaskPrediction(BaseModel):
     Issue_Key: str
     Title: str
-    Riesgo_Probabilidad: float
-    Retraso_Probabilidad: float
-    Alerta: str  # Ej: "Crítico", "Moderado", "Controlado"
-
+    Issue_Type: str
+    Status: str
+    Story_Points: float
+    Blocker_Count: int
+    Created_Date: str | None = None
+    Prob_Riesgo: float
+    Prob_Retraso: float
+    Gravedad: str
 class AnalysisResponse(BaseModel):
     proyecto: str
     alcance: str
