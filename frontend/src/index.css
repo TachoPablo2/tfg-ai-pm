@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  /* Definición de tu paleta corporativa en formato v4 */
+  --color-corporate-blue: #0A2540;
+  --color-corporate-light: #F8F9FA;
+  --color-corporate-border: #E2E8F0;
+  
+  /* Semáforo de riesgos */
+  --color-alert-red: #EF4444;
+  --color-alert-yellow: #F59E0B;
+  --color-alert-green: #10B981;
+}
+
+body {
+  background-color: var(--color-corporate-light);
+  color: #0F172A;
+}
