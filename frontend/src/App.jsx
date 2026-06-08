@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import Header from './ui/components/Header';
 import IngestaView from './ui/pages/IngestaView';
 import LoadingView from './ui/pages/LoadingView';
@@ -11,6 +11,7 @@ export default function App() {
   const [phase, setPhase] = useState(PHASES.INGESTA);
   const [analysisData, setAnalysisData] = useState(null);
   const [error, setError] = useState(null);
+  const chartRef = useRef(null);
 
   const handleStartAnalysis = useCallback(async (params) => {
     setError(null);
@@ -35,9 +36,18 @@ export default function App() {
   const handleExportPdf = useCallback(async () => {
     if (!analysisData) return;
     try {
+      let grafico_base64 = null;
+      if (chartRef.current) {
+        const svg = chartRef.current.querySelector('svg.recharts-surface');
+        if (svg) {
+          const xml = new XMLSerializer().serializeToString(svg);
+          grafico_base64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+        }
+      }
       await exportPdf({
         datos_ui: analysisData.datos_ui,
         recomendacion_ia: analysisData.recomendacion_ia,
+        grafico_base64,
       });
     } catch (err) {
       setError(err.message);
@@ -73,7 +83,7 @@ export default function App() {
         )}
         {phase === PHASES.LOADING && <LoadingView />}
         {phase === PHASES.DASHBOARD && (
-          <DashboardView data={analysisData} onExportPdf={handleExportPdf} />
+          <DashboardView data={analysisData} onExportPdf={handleExportPdf} chartRef={chartRef} />
         )}
       </main>
 

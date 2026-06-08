@@ -33,7 +33,15 @@ function gravedadColor(g) {
   return '#10B981';
 }
 
+function severityFromProb(v) {
+  if (v >= 0.75) return '🔴 Alto';
+  if (v >= 0.55) return '🟡 Medio';
+  return '🟢 Bajo';
+}
+
 function TareaCard({ tarea, icon: Icon, label, valueKey, colorKey }) {
+  const rawSeverity = colorKey ? tarea[colorKey] : null;
+  const severity = rawSeverity || severityFromProb(tarea[valueKey]);
   return (
     <div className="flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-lg">
       <div className="p-2 rounded-full bg-slate-100 shrink-0">
@@ -47,11 +55,11 @@ function TareaCard({ tarea, icon: Icon, label, valueKey, colorKey }) {
           <span
             className="text-xs font-semibold px-2 py-0.5 rounded-full"
             style={{
-              backgroundColor: `${gravedadColor(tarea[colorKey])}18`,
-              color: gravedadColor(tarea[colorKey]),
+              backgroundColor: `${gravedadColor(severity)}18`,
+              color: gravedadColor(severity),
             }}
           >
-            {tarea[colorKey]}
+            {severity}
           </span>
         </div>
       </div>
@@ -59,7 +67,7 @@ function TareaCard({ tarea, icon: Icon, label, valueKey, colorKey }) {
   );
 }
 
-export default function DashboardView({ data, onExportPdf }) {
+export default function DashboardView({ data, onExportPdf, chartRef }) {
   const [tab, setTab] = useState('metrics');
 
   const kpis = data?.datos_ui?.UI_Header_KPIs || {};
@@ -97,9 +105,10 @@ export default function DashboardView({ data, onExportPdf }) {
 
   const alertaActiva = estado.Alerta_Retraso_Global === 'Activada';
 
-  const retrasoMedio = kpis.Retraso_Promedio;
-  const semaforoRetrasoColor =
-    retrasoMedio >= 0.6 ? '#EF4444' : retrasoMedio >= 0.3 ? '#F59E0B' : '#10B981';
+  const chartColor = (v) =>
+    v >= 0.6 ? '#EF4444' : v >= 0.3 ? '#F59E0B' : '#10B981';
+  const riesgoChartColor = chartColor(kpis.Riesgo_Promedio);
+  const retrasoChartColor = chartColor(kpis.Retraso_Promedio);
 
   return (
     <div className="max-w-6xl mx-auto pt-6 pb-12 space-y-6">
@@ -112,15 +121,21 @@ export default function DashboardView({ data, onExportPdf }) {
         />
         <KpiCard
           label="Esfuerzo Total"
-          value={kpis.Esfuerzo_Total != null ? `${formatNum(kpis.Esfuerzo_Total)} h` : '---'}
+          value={kpis.Esfuerzo_Total != null ? formatNum(kpis.Esfuerzo_Total) : '---'}
           subtitle="Story Points"
           color="#0F172A"
         />
         <KpiCard
           label="Esf. en Riesgo"
-          value={metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo != null ? `${formatNum(metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo)} h` : '---'}
+          value={metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo != null ? formatNum(metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo) : '---'}
           subtitle="Story Points"
-          color={metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo > 0 ? '#EF4444' : '#10B981'}
+          color={
+            kpis.Esfuerzo_Total > 0 && metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo / kpis.Esfuerzo_Total > 0.5
+              ? '#EF4444'
+              : metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo > 0
+                ? '#F59E0B'
+                : '#10B981'
+          }
         />
         <KpiCard
           label="Bloqueadas"
@@ -150,11 +165,11 @@ export default function DashboardView({ data, onExportPdf }) {
           </span>
         </div>
         <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
-          <Clock className="w-5 h-5" style={{ color: semaforoRetrasoColor }} />
+          <Clock className="w-5 h-5" style={{ color: alertaActiva ? '#F59E0B' : '#10B981' }} />
           <span className="text-sm text-slate-600">
-            Retraso:{' '}
-            <span className="font-semibold" style={{ color: semaforoRetrasoColor }}>
-              {alertaActiva ? 'Alto' : 'Controlado'}
+            Alerta de retraso:{' '}
+            <span className="font-semibold" style={{ color: alertaActiva ? '#F59E0B' : '#10B981' }}>
+              {alertaActiva ? 'Activada' : 'Desactivada'}
             </span>
           </span>
         </div>
@@ -195,34 +210,42 @@ export default function DashboardView({ data, onExportPdf }) {
       </div>
 
       {tab === 'metrics' && (
-        <div className="space-y-6">
-          {topRiesgos.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
-                Top Tareas en Riesgo
-              </h3>
+        <div className="space-y-6" ref={chartRef}>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
+              Tareas en Riesgo
+            </h3>
+            {topRiesgos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {topRiesgos.map((t, i) => (
                   <TareaCard key={i} tarea={t} icon={AlertTriangle} label="Riesgo" valueKey="Prob_Riesgo" colorKey="Gravedad" />
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 text-center">
+                <p className="text-sm text-slate-400">No se detectaron tareas con riesgo significativo.</p>
+              </div>
+            )}
+          </div>
 
-          {topRetrasos.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                <ArrowDown className="w-4 h-4 text-[#F59E0B]" />
-                Top Tareas con Retraso
-              </h3>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+              <ArrowDown className="w-4 h-4 text-[#F59E0B]" />
+              Tareas con Retraso
+            </h3>
+            {topRetrasos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {topRetrasos.map((t, i) => (
-                  <TareaCard key={i} tarea={t} icon={ArrowDown} label="Retraso" valueKey="Prob_Retraso" colorKey="Gravedad" />
+                  <TareaCard key={i} tarea={t} icon={ArrowDown} label="Retraso" valueKey="Prob_Retraso" />
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 text-center">
+                <p className="text-sm text-slate-400">No se detectaron tareas con retraso significativo.</p>
+              </div>
+            )}
+          </div>
 
           {evolucionRiesgoData.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-xl p-6">
@@ -245,9 +268,9 @@ export default function DashboardView({ data, onExportPdf }) {
                   <Line
                     type="monotone"
                     dataKey="riesgo"
-                    stroke="#EF4444"
+                    stroke={riesgoChartColor}
                     strokeWidth={2}
-                    dot={{ r: 3, fill: '#EF4444' }}
+                    dot={{ r: 3, fill: riesgoChartColor }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -275,9 +298,9 @@ export default function DashboardView({ data, onExportPdf }) {
                   <Line
                     type="monotone"
                     dataKey="retraso"
-                    stroke="#F59E0B"
+                    stroke={retrasoChartColor}
                     strokeWidth={2}
-                    dot={{ r: 3, fill: '#F59E0B' }}
+                    dot={{ r: 3, fill: retrasoChartColor }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -320,12 +343,10 @@ export default function DashboardView({ data, onExportPdf }) {
             </div>
           )}
 
-          {topRiesgos.length === 0 && topRetrasos.length === 0 && evolucionRiesgoData.length === 0 && tipoData.length === 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
-              <AlertTriangle className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-400">
-                No hay datos suficientes para mostrar metricas.
-              </p>
+          {evolucionRiesgoData.length === 0 && evolucionRetrasoData.length === 0 && tipoData.length === 0 && (
+            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
+              <TrendingUp className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm text-slate-400">No hay datos temporales para mostrar graficos.</p>
             </div>
           )}
         </div>
