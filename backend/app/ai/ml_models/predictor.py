@@ -1,6 +1,6 @@
 import pandas as pd
 import joblib
-import os
+from pathlib import Path
 import logging
 from typing import List
 
@@ -9,10 +9,11 @@ from app.core.exceptions import ModelInferenceError
 
 logger = logging.getLogger(__name__)
 
+
 class MLPredictor:
     def __init__(self):
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        models_dir = os.path.join(base_dir, "models")
+        base_dir = Path(__file__).parents[4]
+        models_dir = base_dir / "models"
         
         retrasos_path = os.path.join(models_dir, "modelo_retrasos_xgb.pkl")
         riesgos_path = os.path.join(models_dir, "modelo_riesgos_xgb.pkl")

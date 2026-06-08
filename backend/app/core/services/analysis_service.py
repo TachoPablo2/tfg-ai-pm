@@ -3,6 +3,7 @@ from typing import Optional
 
 from app.ai.ml_models.predictor import MLPredictor
 from app.ai.llm_engine.llm_service import LLMService
+from app.api.schemas.pydantic_models import AnalysisRequest
 from app.core.exceptions import ModelInferenceError, LLMInferenceError
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ class AnalysisService:
         self._ml_predictor = ml_predictor or MLPredictor()
         self._llm_service = llm_service or LLMService()
 
-    async def ejecutar_analisis_completo(self, request_data) -> dict:
+    async def ejecutar_analisis_completo(self, request_data: AnalysisRequest) -> dict:
         logger.info(f"Iniciando orquestación de análisis para rol: {request_data.rol}")
 
         try:

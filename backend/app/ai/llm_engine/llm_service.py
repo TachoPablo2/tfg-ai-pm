@@ -11,6 +11,14 @@ from app.core.exceptions import LLMInferenceError
 
 logger = logging.getLogger(__name__)
 
+EMPTY_PAYLOAD = {
+    "Configuracion": {"Alcance": "", "Rol": ""},
+    "UI_Header_KPIs": {},
+    "UI_Tab_1_Estado": {},
+    "LLM_Tab_2_Contexto": {},
+}
+
+
 class LLMService:
     """
     Servicio encargado de agregar las predicciones matemáticas, calcular los KPIs 
@@ -26,7 +34,10 @@ class LLMService:
         Devuelve tanto el Payload para React como el texto de la IA.
         """
         if not predicciones:
-            return {"error": "No hay datos para analizar"}
+            return {
+                "datos_ui": EMPTY_PAYLOAD,
+                "recomendacion_ia": "No hay datos suficientes para generar recomendaciones.",
+            }
 
         # 1. Construir el contrato de datos (Bloques D, E, F del cuaderno)
         payload_sistema = self.construir_payload(predicciones, rol, alcance)
@@ -42,53 +53,43 @@ class LLMService:
         
         # 4. Inferencia y Tolerancia a Fallos (Celda 4 del cuaderno)
         try:
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                lambda: ollama.chat(
-                    model=self.llm_model,
-                    messages=[
-                        {'role': 'system', 'content': system_p},
-                        {'role': 'user', 'content': user_p}
-                    ],
-                    stream=False,
-                    options={
-                        "temperature": 0.3,
-                        "num_ctx": 4096
-                    }
-                )
+            response = await asyncio.to_thread(
+                ollama.chat,
+                model=self.llm_model,
+                messages=[
+                    {'role': 'system', 'content': system_p},
+                    {'role': 'user', 'content': user_p}
+                ],
+                stream=False,
+                options={
+                    "temperature": 0.3,
+                    "num_ctx": 4096
+                }
             )
             
             latencia = time.time() - start_time
-            logger.info(f"⏱️ Tiempo total LLM: {latencia:.2f} segundos")
+            logger.info(f"Tiempo total LLM: {latencia:.2f} segundos")
             
             texto_recomendacion = response['message']['content']
             
         except Exception as e:
             latencia = time.time() - start_time
-            logger.error(f"ERROR DE CONEXIÓN CON EL LLM (Latencia: {latencia:.2f}s): {str(e)}")
-            raise LLMInferenceError(f"LLM no disponible: {str(e)}")
+            logger.error(f"ERROR DE CONEXIÓN CON EL LLM (Latencia: {latencia:.2f}s): {e}")
+            raise LLMInferenceError(f"LLM no disponible: {e}")
 
-        # Devolvemos un objeto híbrido para que el Enrutador pueda mandar
-        # los datos puros a los gráficos de React y el texto al panel lateral.
         return {
             "datos_ui": payload_sistema,
             "recomendacion_ia": texto_recomendacion
         }
 
     def _build_prompt(self, context_data_llm: dict, user_role: str, scope: str) -> tuple[str, str]:
-        """
-        Réplica exacta de la Celda 3: Mitigación de riesgos y reglas anti-alucinaciones.
-        """
         context_str = json.dumps(context_data_llm, indent=2, ensure_ascii=False)
         
-        # 1. Instrucción de Alcance
         if scope == "Sprint":
             focus = "ALCANCE SPRINT: Evalúa las predicciones de riesgo y retraso correspondientes a las tareas de esta iteración única. Tu prioridad es mitigar el impacto operativo inmediato analizando la carga de trabajo y los bloqueos diarios activos."
         else:
             focus = "ALCANCE PROYECTO: Evalúa las predicciones de riesgo y retraso agregadas de múltiples iteraciones. Tu prioridad es identificar tendencias de desviación a largo plazo, evaluar la salud global del proyecto y detectar patrones de bloqueo recurrentes."
 
-        # 2. Instrucción de Rol
         if user_role == "Project Manager":
             instruccion_rol = "ROL PM: Eres un consultor táctico. Genera recomendaciones operativas a corto plazo (reasignación de tareas, resolución de bloqueos, repriorización del backlog, pair programming). Usa un tono directo y orientado a la ejecución del equipo."
         else:

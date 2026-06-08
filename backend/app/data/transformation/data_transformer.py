@@ -35,8 +35,11 @@ class JiraTransformer:
                 (df["Resolved"] - df["Created"]).dt.total_seconds() / 60
             )
             df["Resolution_Time_Minutes"] = df["Resolution_Time_Minutes"].fillna(0.0)
+            df["Created_Date"] = df["Created"].dt.strftime("%Y-%m-%d")
+            df["Created_Date"] = df["Created_Date"].replace("NaT", None)
         else:
             df["Resolution_Time_Minutes"] = 0.0
+            df["Created_Date"] = None
 
         if "In_Progress_Minutes" not in df.columns:
             df["In_Progress_Minutes"] = df["Resolution_Time_Minutes"] * IN_PROGRESS_RATIO

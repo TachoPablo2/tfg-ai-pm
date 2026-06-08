@@ -32,6 +32,10 @@ class ReportService:
             num_seccion = "3" if tiene_grafico else "2"
             self._add_ia_recommendations(pdf, recomendacion_ia, num_seccion)
 
+            # fpdf2 built-in fonts solo soportan Latin-1.
+            # Para Unicode completo (tildes, eñes), registrar una TTF:
+            #   pdf.add_font("DejaVu", "", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", uni=True)
+            #   pdf.set_font("DejaVu", size=11)
             pdf_bytes = pdf.output(dest="S").encode("latin-1", errors="replace")
             return io.BytesIO(pdf_bytes)
 
