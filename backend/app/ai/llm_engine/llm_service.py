@@ -7,6 +7,7 @@ import time
 from typing import List, Dict, Any
 
 from app.api.schemas.pydantic_models import TaskPrediction
+from app.core.exceptions import LLMInferenceError
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class LLMService:
             return {"error": "No hay datos para analizar"}
 
         # 1. Construir el contrato de datos (Bloques D, E, F del cuaderno)
-        payload_sistema = self._construir_payload(predicciones, rol, alcance)
+        payload_sistema = self.construir_payload(predicciones, rol, alcance)
         
         # 2. Extraer SOLO el contexto específico para el LLM para no saturar tokens
         context_data_llm = payload_sistema.get("LLM_Tab_2_Contexto", {})
@@ -65,13 +66,8 @@ class LLMService:
             
         except Exception as e:
             latencia = time.time() - start_time
-            logger.error(f"❌ ERROR DE CONEXIÓN CON EL LLM (Latencia: {latencia:.2f}s): {str(e)}")
-            # Respuesta de contingencia RNF-07
-            texto_recomendacion = (
-                "⚠️ Sistema de recomendaciones temporalmente no disponible.\n"
-                "El dashboard de métricas sigue operativo. Por favor, revise los "
-                "semáforos de riesgo manualmente o contacte con soporte técnico."
-            )
+            logger.error(f"ERROR DE CONEXIÓN CON EL LLM (Latencia: {latencia:.2f}s): {str(e)}")
+            raise LLMInferenceError(f"LLM no disponible: {str(e)}")
 
         # Devolvemos un objeto híbrido para que el Enrutador pueda mandar
         # los datos puros a los gráficos de React y el texto al panel lateral.
@@ -129,7 +125,7 @@ class LLMService:
         user_prompt = "Redacta el reporte de recomendaciones estratégicas en perfecto español basándote estrictamente en las predicciones proporcionadas."
         return system_prompt, user_prompt
 
-    def _construir_payload(self, predicciones: List[TaskPrediction], rol: str, alcance: str) -> Dict[str, Any]:
+    def construir_payload(self, predicciones: List[TaskPrediction], rol: str, alcance: str) -> Dict[str, Any]:
         """
         Agrega las predicciones matemáticas y calcula los KPIs.
         Devuelve el diccionario en crudo (no en string) para facilitar su manejo.

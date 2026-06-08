@@ -39,10 +39,7 @@ class TaskPrediction(BaseModel):
     Gravedad: str
 
 class AnalysisResponse(BaseModel):
-    proyecto: str
-    alcance: str
-    tareas_analizadas: int
-    predicciones: List[TaskPrediction]
+    datos_ui: dict
     recomendacion_ia: str
 
 

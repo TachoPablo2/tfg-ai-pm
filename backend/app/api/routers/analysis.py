@@ -5,7 +5,8 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from app.data.ingestion.file_reader import JiraFileReader
 from app.data.transformation.data_transformer import JiraTransformer
 from app.api.schemas.pydantic_models import AnalysisRequest, AnalysisResponse
-from app.core.services.analysis_service import analysis_service
+from app.api.dependencies import AnalysisServiceDep
+from app.core.exceptions import AnalysisError, FileValidationError, ModelInferenceError, LLMInferenceError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analyze", tags=["Analysis"])
@@ -14,7 +15,8 @@ router = APIRouter(prefix="/analyze", tags=["Analysis"])
 async def procesar_analisis(
     file: UploadFile = File(...),
     alcance: str = Form(...),
-    rol: str = Form(...)
+    rol: str = Form(...),
+    analysis_service: AnalysisServiceDep = None,
 ):
     try:
         df_raw = await JiraFileReader.leer_archivo(file)
@@ -33,8 +35,12 @@ async def procesar_analisis(
         
         return resultado_final
 
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
+    except FileValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except (ValueError, AnalysisError, LLMInferenceError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except ModelInferenceError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.error(f"Error inesperado en /analyze/process: {str(e)}")
         raise HTTPException(status_code=500, detail="Error interno del servidor. Inténtelo de nuevo más tarde.")

@@ -5,6 +5,7 @@ import logging
 from typing import List
 
 from app.api.schemas.pydantic_models import AnalysisRequest, TaskPrediction
+from app.core.exceptions import ModelInferenceError
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +27,14 @@ class MLPredictor:
             
             logger.info("✅ Modelos ML cargados correctamente.")
         except Exception as e:
-            logger.error(f"❌ Error crítico al cargar los modelos: {str(e)}")
-            raise
+            logger.error(f"Error crítico al cargar los modelos: {str(e)}")
+            raise ModelInferenceError(f"Error al cargar los modelos ML: {str(e)}")
 
     def predict(self, request_data: AnalysisRequest) -> List[TaskPrediction]:
         df_input = pd.DataFrame([tarea.model_dump() for tarea in request_data.tareas])
         
         if df_input.empty:
-            raise ValueError("No hay tareas válidas para predecir tras el preprocesamiento.")
+            raise ModelInferenceError("No hay tareas válidas para predecir tras el preprocesamiento.")
         
         # 2. PREVENCIÓN DE DATA LEAKAGE (Exactamente como en el Notebook 5)
         cols_to_drop_global = [
