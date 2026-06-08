@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -34,23 +34,30 @@ class TaskPrediction(BaseModel):
     Story_Points: float
     Blocker_Count: int
     Created_Date: str | None = None
-    Prob_Riesgo: float
-    Prob_Retraso: float
+    Prob_Riesgo: float = Field(..., ge=0.0, le=1.0)
+    Prob_Retraso: float = Field(..., ge=0.0, le=1.0)
     Gravedad: str
+
 class AnalysisResponse(BaseModel):
     proyecto: str
     alcance: str
     tareas_analizadas: int
     predicciones: List[TaskPrediction]
     recomendacion_ia: str
-    
+
+
+class ReportRequest(BaseModel):
+    datos_ui: dict
+    recomendacion_ia: str = Field(..., min_length=1)
+    grafico_base64: Optional[str] = None
+
 
 class AnalysisRequest(BaseModel):
     """
     Esquema que agrupa la petición completa: Los metadatos del frontend + las filas del CSV.
     """
-    alcance: str = Field(..., description="Debe ser 'sprint' o 'proyecto'")
-    rol: str = Field(..., description="Debe ser 'PM' o 'PMO'")
+    alcance: Literal['sprint', 'proyecto'] = Field(..., description="Alcance del análisis")
+    rol: Literal['PM', 'PMO'] = Field(..., description="Rol del analista")
     tareas: List[TaskRecord] = Field(..., description="Lista de filas extraídas del archivo")
 
     @model_validator(mode='after')
@@ -64,22 +71,19 @@ class AnalysisRequest(BaseModel):
         proyectos_unicos = {tarea.Project_ID for tarea in self.tareas}
 
         # 3. Aplicar las reglas de negocio según el alcance
-        if self.alcance.lower() == 'sprint':
+        if self.alcance == 'sprint':
             if len(sprints_unicos) > 1:
                 raise ValueError(
                     f"Incongruencia detectada (Fail-Fast): Has seleccionado análisis de 'sprint', "
                     f"pero el archivo contiene tareas de múltiples sprints distintos: {sprints_unicos}. "
                     "Por favor, sube un archivo filtrado para un solo sprint."
                 )
-                
-        elif self.alcance.lower() == 'proyecto':
+        elif self.alcance == 'proyecto':
             if len(proyectos_unicos) > 1:
                 raise ValueError(
                     f"Incongruencia detectada (Fail-Fast): Has seleccionado análisis de 'proyecto', "
                     f"pero el archivo mezcla tareas de varios proyectos diferentes: {proyectos_unicos}. "
                     "Por favor, sube el histórico de un único proyecto."
                 )
-        else:
-            raise ValueError("El alcance especificado no es válido. Usa 'sprint' o 'proyecto'.")
 
         return self

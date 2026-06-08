@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import logging
 
 # Configuramos un logger básico para tener trazabilidad en consola
@@ -75,3 +76,8 @@ class JiraTransformer:
                 
         logger.info(f"Transformación completada. Columnas procesadas: {df.shape[1]}")
         return df
+
+    @staticmethod
+    def dataframe_to_records(df: pd.DataFrame) -> list:
+        df_safe = df.replace({np.nan: None})
+        return df_safe.to_dict(orient="records")
