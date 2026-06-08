@@ -7,6 +7,10 @@ from fpdf import FPDF
 
 from app.core.exceptions import ReportGenerationError
 
+
+def _sanitize(text: str) -> str:
+    return text.encode("latin-1", errors="replace").decode("latin-1")
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +26,7 @@ class ReportService:
             pdf = FPDF()
             pdf.add_page()
 
-            self._add_header(pdf)
+            self._add_header(pdf, datos_ui)
             self._add_kpis_section(pdf, datos_ui)
 
             tiene_grafico = bool(grafico_base64)
@@ -43,14 +47,17 @@ class ReportService:
             logger.error(f"Error generando PDF: {e}")
             raise ReportGenerationError(f"Error al generar el PDF: {e}") from e
 
-    def _add_header(self, pdf: FPDF) -> None:
+    def _add_header(self, pdf: FPDF, datos_ui: dict) -> None:
+        config = datos_ui.get("Configuracion", {})
+        alcance = config.get("Alcance", "Proyecto")
+        titulo = f"Informe Ejecutivo de {alcance} (IA)"
         pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, txt="Informe Ejecutivo de Proyecto (IA)", ln=True, align="C")
+        pdf.cell(0, 10, txt=_sanitize(titulo), ln=True, align="C")
         pdf.set_font("Arial", "I", 10)
         pdf.cell(
             0,
             10,
-            txt=f"Generado el: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            txt=_sanitize(f"Generado el: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"),
             ln=True,
             align="C",
         )
@@ -58,16 +65,16 @@ class ReportService:
 
     def _add_kpis_section(self, pdf: FPDF, datos_ui: dict) -> None:
         pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, txt="1. Métricas Operativas Globales", ln=True)
+        pdf.cell(0, 10, txt=_sanitize("1. Metricas Operativas Globales"), ln=True)
         pdf.set_font("Arial", size=11)
         kpis = datos_ui.get("UI_Header_KPIs", {})
         for nombre, valor in kpis.items():
-            pdf.cell(0, 8, txt=f"• {nombre.replace('_', ' ')}: {valor}", ln=True)
+            pdf.cell(0, 8, txt=_sanitize(f"- {nombre.replace('_', ' ')}: {valor}"), ln=True)
         pdf.ln(5)
 
     def _add_chart_section(self, pdf: FPDF, grafico_base64: str) -> None:
         pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, txt="2. Evolución del Riesgo y Retraso", ln=True)
+        pdf.cell(0, 10, txt=_sanitize("2. Evolución del Riesgo y Retraso"), ln=True)
         image_bytes = self._decode_base64_image(grafico_base64)
         pdf.image(io.BytesIO(image_bytes), x=10, y=pdf.get_y(), w=190)
         pdf.ln(100)
@@ -86,10 +93,9 @@ class ReportService:
         self, pdf: FPDF, recomendacion_ia: str, num_seccion: str
     ) -> None:
         pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, txt=f"{num_seccion}. Recomendaciones Estratégicas (LLM)", ln=True)
+        pdf.cell(0, 10, txt=_sanitize(f"{num_seccion}. Recomendaciones Estratégicas (LLM)"), ln=True)
         pdf.set_font("Arial", size=11)
-        texto_limpio = recomendacion_ia.encode("latin-1", "replace").decode("latin-1")
-        pdf.multi_cell(0, 6, txt=texto_limpio)
+        pdf.multi_cell(0, 6, txt=_sanitize(recomendacion_ia))
 
 
 report_service = ReportService()

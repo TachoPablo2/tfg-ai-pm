@@ -21,7 +21,7 @@ class JiraTransformer:
             "Summary": "Title",
             "Issue Type": "Issue_Type",
             "Custom field (Story Points)": "Story_Point",
-            "Status": "Sprint_State",
+            "Status": "Status",
             "Project key": "Project_Name",
         }
         rename_map = {k: v for k, v in mapeo_columnas.items() if k in df_crudo.columns}
@@ -38,8 +38,10 @@ class JiraTransformer:
             df["Created_Date"] = df["Created"].dt.strftime("%Y-%m-%d")
             df["Created_Date"] = df["Created_Date"].replace("NaT", None)
         else:
-            df["Resolution_Time_Minutes"] = 0.0
-            df["Created_Date"] = None
+            if "Resolution_Time_Minutes" not in df.columns:
+                df["Resolution_Time_Minutes"] = 0.0
+            if "Created_Date" not in df.columns:
+                df["Created_Date"] = None
 
         if "In_Progress_Minutes" not in df.columns:
             df["In_Progress_Minutes"] = df["Resolution_Time_Minutes"] * IN_PROGRESS_RATIO
@@ -50,22 +52,25 @@ class JiraTransformer:
         else:
             df["Story_Point"] = 0.0
 
-        # 4. Cálculo heurístico de Blocker_Count
-        columnas_bloqueo = [
-            col
-            for col in df.columns
-            if any(x in col.lower() for x in ["block", "depend", "flagged", "impediment"])
-        ]
-        df["Blocker_Count"] = (
-            df[columnas_bloqueo].notna().sum(axis=1).astype(int)
-            if columnas_bloqueo
-            else 0
-        )
+        # 4. Cálculo heurístico de Blocker_Count (solo si no existe ya)
+        if "Blocker_Count" not in df.columns:
+            columnas_bloqueo = [
+                col
+                for col in df.columns
+                if col != "Blocker_Count"
+                and any(x in col.lower() for x in ["block", "depend", "flagged", "impediment"])
+            ]
+            df["Blocker_Count"] = (
+                df[columnas_bloqueo].notna().sum(axis=1).astype(int)
+                if columnas_bloqueo
+                else 0
+            )
 
         # 5. Patrón Fallback para variables históricas de auditoría
         columnas_auditoria = {
             "Project_ID": PROJECT_ID_DEFAULT,
             "Sprint_ID": SPRINT_ID_DEFAULT,
+            "Sprint_State": "ACTIVE",
             "Total_Effort_Minutes": df.get("Resolution_Time_Minutes", 0),
             "Title_Changed_After_Estimation": 0,
             "Description_Changed_After_Estimation": 0,

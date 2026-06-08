@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 class MLPredictor:
     def __init__(self):
-        base_dir = Path(__file__).parents[4]
+        base_dir = Path(__file__).parents[3]
         models_dir = base_dir / "models"
         
-        retrasos_path = os.path.join(models_dir, "modelo_retrasos_xgb.pkl")
-        riesgos_path = os.path.join(models_dir, "modelo_riesgos_xgb.pkl")
+        retrasos_path = models_dir / "modelo_retrasos_xgb.pkl"
+        riesgos_path = models_dir / "modelo_riesgos_xgb.pkl"
         
         logger.info("Cargando pipelines de Machine Learning (XGBoost) en memoria...")
         try:
@@ -37,17 +37,20 @@ class MLPredictor:
         if df_input.empty:
             raise ModelInferenceError("No hay tareas válidas para predecir tras el preprocesamiento.")
         
-        # 2. PREVENCIÓN DE DATA LEAKAGE (Exactamente como en el Notebook 5)
-        cols_to_drop_global = [
-            'Issue_Key', 'Project_ID', 'Project_Name', 'Sprint_ID', 
-            'Resolution_Time_Minutes', 'Target_Retraso', 'Target_Riesgo'
+        # 2. SELECCIONAR SOLO LAS FEATURES CON LAS QUE SE ENTRENÓ EL MODELO (Notebook 04)
+        features_retraso = [
+            'Issue_Type', 'Sprint_State', 'Story_Point', 'Total_Effort_Minutes',
+            'In_Progress_Minutes', 'Title_Changed_After_Estimation',
+            'Description_Changed_After_Estimation',
+            'Story_Point_Changed_After_Estimation', 'Blocker_Count'
         ]
-        X_ret = df_input.drop(columns=cols_to_drop_global, errors='ignore')
+        features_riesgo = [
+            'Issue_Type', 'Sprint_State', 'Story_Point', 'Total_Effort_Minutes',
+            'In_Progress_Minutes', 'Title_Changed_After_Estimation'
+        ]
         
-        cols_leakage_riesgo = [
-            'Blocker_Count', 'Story_Point_Changed_After_Estimation', 'Description_Changed_After_Estimation'
-        ]
-        X_rsg = X_ret.drop(columns=cols_leakage_riesgo, errors='ignore')
+        X_ret = df_input[[c for c in features_retraso if c in df_input.columns]].copy()
+        X_rsg = df_input[[c for c in features_riesgo if c in df_input.columns]].copy()
         
         # 3. Inferencia matemática
         prob_retrasos = self.pipeline_retraso.predict_proba(X_ret)[:, 1]
@@ -64,7 +67,6 @@ class MLPredictor:
             
             # Lógica de semáforo de Riesgo (Notebook 5)
             gravedad = self._calcular_gravedad_riesgo(p_riesgo, bloqueos)
-            
             prediccion = TaskPrediction(
                 Issue_Key=tarea.Issue_Key,
                 Title=tarea.Title,
@@ -72,6 +74,7 @@ class MLPredictor:
                 Status=getattr(tarea, 'Status', 'Open'),
                 Story_Points=float(getattr(tarea, 'Story_Point', 0.0)),
                 Blocker_Count=bloqueos,
+                Sprint_ID=int(getattr(tarea, 'Sprint_ID', 1)),
                 Created_Date=getattr(tarea, 'Created_Date', None),
                 Prob_Riesgo=round(p_riesgo, 4),
                 Prob_Retraso=round(p_retraso, 4),

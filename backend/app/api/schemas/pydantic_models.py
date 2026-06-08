@@ -26,9 +26,10 @@ class TaskPrediction(BaseModel):
     Issue_Key: str
     Title: str
     Issue_Type: str
-    Status: str
+    Status: str = Field(default="Open")
     Story_Points: float
     Blocker_Count: int
+    Sprint_ID: int = Field(default=1)
     Created_Date: str | None = None
     Prob_Riesgo: float = Field(..., ge=0.0, le=1.0)
     Prob_Retraso: float = Field(..., ge=0.0, le=1.0)

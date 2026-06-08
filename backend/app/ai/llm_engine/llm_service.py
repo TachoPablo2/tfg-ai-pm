@@ -153,13 +153,13 @@ class LLMService:
         
         top_retrasos_df['Prob_Retraso'] = top_retrasos_df['Prob_Retraso'].round(2)
         lista_top_retrasos = top_retrasos_df[[
-            'Issue_Key', 'Issue_Type', 'Title', 'Prob_Retraso', 'Gravedad'
+            'Issue_Key', 'Issue_Type', 'Title', 'Prob_Retraso'
         ]].to_dict(orient='records')
 
         # E.1. KPIs Transversales
         kpi_riesgo_medio = float(df_analisis['Prob_Riesgo'].mean())
         kpi_retraso_medio = float(df_analisis['Prob_Retraso'].mean())
-        tareas_bloqueadas_total = int(df_analisis['Blocker_Count'].sum())
+        tareas_bloqueadas_total = int((df_analisis['Blocker_Count'] > 0).sum())
         total_story_points = float(df_analisis['Story_Points'].sum())
         
         semaforo_global = "Rojo" if kpi_riesgo_medio >= 0.60 else "Amarillo" if kpi_riesgo_medio >= 0.30 else "Verde"
@@ -176,14 +176,18 @@ class LLMService:
             (df_analisis['Prob_Retraso'] > 0.7) | 
             (df_analisis['Blocker_Count'] > 0)
         ]
-        esfuerzo_en_riesgo = float(tareas_criticas['Story_Points'].sum())
+        esfuerzo_en_riesgo_col = 'Story_Points' if 'Story_Points' in df_analisis.columns else 'Total_Effort_Minutes'
+        esfuerzo_en_riesgo = float(tareas_criticas.get(esfuerzo_en_riesgo_col, pd.Series([0])).sum())
         
-        # E.3. Tendencias Temporales
+        # E.3. Tendencias Temporales (BIFURCACIÓN POR ALCANCE - Notebook 05)
         evolucion_riesgo = {}
         evolucion_retraso = {}
         grafico_riesgo_tipo = {}
 
-        if 'Created_Date' in df_analisis.columns and not df_analisis['Created_Date'].isnull().all():
+        if alcance == "Proyecto" and 'Sprint_ID' in df_analisis.columns:
+            evolucion_riesgo = df_analisis.groupby('Sprint_ID')['Prob_Riesgo'].mean().round(2).to_dict()
+            evolucion_retraso = df_analisis.groupby('Sprint_ID')['Prob_Retraso'].mean().round(2).to_dict()
+        elif 'Created_Date' in df_analisis.columns and not df_analisis['Created_Date'].isnull().all():
             df_analisis['Dia'] = pd.to_datetime(df_analisis['Created_Date'], errors='coerce').dt.date
             df_valido = df_analisis.dropna(subset=['Dia'])
             if not df_valido.empty:
@@ -206,10 +210,11 @@ class LLMService:
                 "Semaforo_Riesgo_Global": semaforo_global,
                 "Alerta_Retraso_Global": "Activada" if kpi_retraso_medio > 0.50 else "Desactivada",
                 "Grafico_Riesgo_por_Tipo": grafico_riesgo_tipo,
-                "Grafico_Evolucion_Riesgo": evolucion_riesgo 
+                "Grafico_Evolucion_Riesgo": evolucion_riesgo,
+                "Grafico_Evolucion_Retraso": evolucion_retraso
             },
             "LLM_Tab_2_Contexto": {
-                "Métricas_Globales_Negocio": {
+                "Metricas_Globales_Negocio": {
                     "Riesgo_General": round(kpi_riesgo_medio, 2),
                     "Retraso_General": round(kpi_retraso_medio, 2),
                     "Total_Bloqueos_Activos": tareas_bloqueadas_total,
