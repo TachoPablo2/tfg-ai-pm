@@ -1,7 +1,8 @@
 import json
+import asyncio
 import pandas as pd
 import logging
-import ollama  # Importación clave para el modelo local (RNF-05 Privacidad)
+import ollama
 import time
 from typing import List, Dict, Any
 
@@ -40,18 +41,21 @@ class LLMService:
         
         # 4. Inferencia y Tolerancia a Fallos (Celda 4 del cuaderno)
         try:
-            # Llamada asíncrona a la API local de Ollama
-            response = ollama.chat(
-                model=self.llm_model, 
-                messages=[
-                    {'role': 'system', 'content': system_p},
-                    {'role': 'user', 'content': user_p}
-                ],
-                stream=False,
-                options={
-                    "temperature": 0.3,       
-                    "num_ctx": 4096        
-                }
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: ollama.chat(
+                    model=self.llm_model,
+                    messages=[
+                        {'role': 'system', 'content': system_p},
+                        {'role': 'user', 'content': user_p}
+                    ],
+                    stream=False,
+                    options={
+                        "temperature": 0.3,
+                        "num_ctx": 4096
+                    }
+                )
             )
             
             latencia = time.time() - start_time
@@ -163,7 +167,10 @@ class LLMService:
         
         semaforo_global = "Rojo" if kpi_riesgo_medio >= 0.60 else "Amarillo" if kpi_riesgo_medio >= 0.30 else "Verde"
         
-        tareas_cerradas = len(df_analisis[df_analisis['Status'].isin(['Closed', 'Done', 'Cerrada'])])
+        if 'Status' in df_analisis.columns:
+            tareas_cerradas = len(df_analisis[df_analisis['Status'].str.lower().isin(['closed', 'done', 'resolved', 'cerrada'])])
+        else:
+            tareas_cerradas = 0
         tasa_completado = round((tareas_cerradas / max(1, len(df_analisis))) * 100, 2)
         
         # E.2. Métricas de Impacto de Negocio

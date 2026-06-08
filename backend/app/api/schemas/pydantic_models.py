@@ -23,6 +23,7 @@ class TaskRecord(BaseModel):
     Description_Changed_After_Estimation: int = Field(..., description="0 o 1 si la descripción cambió")
     Story_Point_Changed_After_Estimation: int = Field(..., description="0 o 1 si la estimación cambió")
     Blocker_Count: int = Field(..., description="Número de impedimentos/bloqueos registrados")
+    Status: str = Field(default="Open", description="Estado actual de la tarea (ej. Open, Closed, Done)")
 
 # 2. ESQUEMA DE RESPUESTA (Lo que devolverá la API al Frontend React)
 class TaskPrediction(BaseModel):

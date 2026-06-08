@@ -30,8 +30,10 @@ class MLPredictor:
             raise
 
     def predict(self, request_data: AnalysisRequest) -> List[TaskPrediction]:
-        # 1. Transformar a DataFrame
         df_input = pd.DataFrame([tarea.model_dump() for tarea in request_data.tareas])
+        
+        if df_input.empty:
+            raise ValueError("No hay tareas válidas para predecir tras el preprocesamiento.")
         
         # 2. PREVENCIÓN DE DATA LEAKAGE (Exactamente como en el Notebook 5)
         cols_to_drop_global = [
@@ -66,7 +68,7 @@ class MLPredictor:
                 Title=tarea.Title,
                 Issue_Type=getattr(tarea, 'Issue_Type', 'Task'),
                 Status=getattr(tarea, 'Status', 'Open'),
-                Story_Points=float(getattr(tarea, 'Story_Points', 0.0)),
+                Story_Points=float(getattr(tarea, 'Story_Point', 0.0)),
                 Blocker_Count=bloqueos,
                 Created_Date=getattr(tarea, 'Created_Date', None),
                 Prob_Riesgo=round(p_riesgo, 4),
