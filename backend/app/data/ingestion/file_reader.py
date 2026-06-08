@@ -8,33 +8,64 @@ from app.core.exceptions import FileValidationError
 
 logger = logging.getLogger(__name__)
 
+MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
+EXTENSIONES_VALIDAS = {"csv", "xlsx", "xls"}
+ENCODINGS_CSV = ["utf-8", "latin-1", "cp1252"]
+
+
 class JiraFileReader:
-    
+
     @staticmethod
     async def leer_archivo(archivo: UploadFile) -> pd.DataFrame:
+        if not archivo.filename:
+            raise FileValidationError("El archivo no tiene nombre.")
+
         logger.info(f"Ingestando archivo: {archivo.filename}")
-        
-        extension = archivo.filename.split('.')[-1].lower()
-        if extension not in ['csv', 'xlsx', 'xls']:
-            raise FileValidationError("Formato no admitido. Usa .csv, .xlsx o .xls")
-            
+
+        extension = archivo.filename.rsplit(".", 1)[-1].lower()
+        if extension not in EXTENSIONES_VALIDAS:
+            raise FileValidationError(
+                f"Formato '.{extension}' no admitido. Usa: {', '.join(sorted(EXTENSIONES_VALIDAS))}"
+            )
+
         try:
             contenido = await archivo.read()
+            if len(contenido) > MAX_FILE_SIZE:
+                raise FileValidationError(
+                    f"El archivo excede el límite de {MAX_FILE_SIZE // (1024 * 1024)} MB."
+                )
+
             buffer = io.BytesIO(contenido)
-            
-            if extension == 'csv':
-                df = await run_in_threadpool(pd.read_csv, buffer)
+
+            if extension == "csv":
+                df = await JiraFileReader._leer_csv(buffer)
             else:
                 df = await run_in_threadpool(pd.read_excel, buffer)
-            
+
             if df.empty:
                 raise FileValidationError("El archivo está vacío.")
-                
+
             logger.info(f"Archivo {extension} procesado. Filas: {len(df)}")
             return df
-                
+
         except FileValidationError:
             raise
         except Exception as e:
-            logger.error(f"Error crítico durante la lectura: {str(e)}")
-            raise FileValidationError(f"No se pudo procesar el archivo: {str(e)}")
+            logger.error(f"Error crítico durante la lectura: {e}")
+            raise FileValidationError(f"No se pudo procesar el archivo: {e}") from e
+
+    @staticmethod
+    async def _leer_csv(buffer: io.BytesIO) -> pd.DataFrame:
+        for encoding in ENCODINGS_CSV:
+            buffer.seek(0)
+            try:
+                return await run_in_threadpool(
+                    pd.read_csv, buffer, encoding=encoding
+                )
+            except (UnicodeDecodeError, UnicodeError):
+                logger.warning(
+                    f"Falló lectura CSV con encoding {encoding}, probando siguiente..."
+                )
+        raise FileValidationError(
+            f"No se pudo leer el CSV con ninguno de los encodings probados: {ENCODINGS_CSV}"
+        )
