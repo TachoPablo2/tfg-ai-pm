@@ -252,3 +252,10 @@ Icon
 ._*
 .Spotlight-V100
 .Trashes
+
+# =========================
+# OpenCode / Agentes / Skills
+# =========================
+.agents/
+skills-lock.json
+python-reviewer.md
