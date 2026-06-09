@@ -62,8 +62,6 @@ class JiraFileReader:
             logger.info(f"Archivo {extension} procesado. Filas: {len(df)}")
             return df
 
-        except FileValidationError:
-            raise
         except Exception as e:
             logger.error(f"Error durante la lectura: {e}")
             raise FileValidationError(f"No se pudo procesar el archivo: {e}") from e
@@ -76,7 +74,7 @@ class JiraFileReader:
                 return await run_in_threadpool(
                     pd.read_csv, buffer, encoding=encoding
                 )
-            except (UnicodeDecodeError, UnicodeError):
+            except UnicodeDecodeError:
                 logger.warning(
                     f"Falló lectura CSV con encoding {encoding}, probando siguiente..."
                 )

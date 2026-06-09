@@ -116,8 +116,6 @@ class ReportService:
                 pdf_bytes = pdf_bytes.encode("latin-1")
             return io.BytesIO(pdf_bytes)
 
-        except ReportGenerationError:
-            raise
         except Exception as e:
             logger.error(f"Error generando PDF: {e}")
             raise ReportGenerationError(f"Error al generar el PDF: {e}") from e
@@ -218,8 +216,6 @@ class ReportService:
                         "Ejecute: pip install cairosvg"
                     )
             return raw
-        except ReportGenerationError:
-            raise
         except Exception as e:
             raise ReportGenerationError(
                 f"Error decodificando imagen base64: {e}"

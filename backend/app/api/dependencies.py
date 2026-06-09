@@ -1,5 +1,3 @@
-from fastapi import Depends
-
 from app.ai.ml_models.predictor import ml_predictor
 from app.ai.llm_engine.llm_service import llm_service
 from app.core.services.analysis_service import AnalysisService

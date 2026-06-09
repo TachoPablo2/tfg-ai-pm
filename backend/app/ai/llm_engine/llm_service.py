@@ -1,4 +1,5 @@
 import json
+import os
 import asyncio
 import pandas as pd
 import logging
@@ -18,13 +19,16 @@ EMPTY_PAYLOAD = {
     "LLM_Tab_2_Contexto": {},
 }
 
-LLM_TIMEOUT_SECONDS = 120
+LLM_MODEL = os.getenv("LLM_MODEL", "llama3")
+LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT", "120"))
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.3"))
+LLM_CONTEXT_SIZE = int(os.getenv("LLM_CONTEXT_SIZE", "4096"))
 
 
 class LLMService:
 
     def __init__(self):
-        self.llm_model = "llama3"
+        self.llm_model = LLM_MODEL
 
     async def generar_informe(self, predicciones: List[TaskPrediction], rol: str, alcance: str) -> dict:
         if not predicciones:
@@ -54,8 +58,8 @@ class LLMService:
                     ],
                     stream=False,
                     options={
-                        "temperature": 0.3,
-                        "num_ctx": 4096,
+                        "temperature": LLM_TEMPERATURE,
+                        "num_ctx": LLM_CONTEXT_SIZE,
                     },
                 ),
                 timeout=LLM_TIMEOUT_SECONDS,
@@ -177,11 +181,7 @@ class LLMService:
             | (df_analisis["Prob_Retraso"] > 0.7)
             | (df_analisis["Blocker_Count"] > 0)
         ]
-        esfuerzo_col = "Story_Points" if "Story_Points" in df_analisis.columns else "Total_Effort_Minutes"
-        if esfuerzo_col in tareas_criticas.columns:
-            esfuerzo_en_riesgo = float(tareas_criticas[esfuerzo_col].sum())
-        else:
-            esfuerzo_en_riesgo = 0.0
+        esfuerzo_en_riesgo = float(tareas_criticas["Story_Points"].sum()) if "Story_Points" in tareas_criticas.columns else 0.0
 
         evolucion_riesgo = {}
         evolucion_retraso = {}

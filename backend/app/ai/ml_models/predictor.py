@@ -96,8 +96,6 @@ class MLPredictor:
                 predicciones.append(prediccion)
 
             return predicciones
-        except ModelInferenceError:
-            raise
         except Exception as e:
             logger.error(f"Error en inferencia ML: {e}")
             raise ModelInferenceError(f"Error durante la predicción: {e}") from e
