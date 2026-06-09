@@ -15,8 +15,6 @@ class MLPredictor:
         self._loaded = False
         self.pipeline_retraso = None
         self.pipeline_riesgo = None
-        self.umbral_retraso = 0.5
-        self.umbral_riesgo = 0.5
 
     def _ensure_loaded(self):
         if self._loaded:
@@ -29,16 +27,8 @@ class MLPredictor:
 
         logger.info("Cargando pipelines de Machine Learning (XGBoost) en memoria...")
         try:
-            riesgos_data = joblib.load(riesgos_path)
-            if isinstance(riesgos_data, dict):
-                self.pipeline_riesgo = riesgos_data["pipeline"]
-                self.umbral_riesgo = riesgos_data.get("optimal_threshold", 0.5)
-            else:
-                self.pipeline_riesgo = riesgos_data
-
-            retrasos_data = joblib.load(retrasos_path)
-            self.pipeline_retraso = retrasos_data["pipeline"]
-            self.umbral_retraso = retrasos_data.get("optimal_threshold", 0.5)
+            self.pipeline_riesgo = joblib.load(riesgos_path)
+            self.pipeline_retraso = joblib.load(retrasos_path)
 
             self._loaded = True
             logger.info("Modelos ML cargados correctamente.")
