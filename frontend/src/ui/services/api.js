@@ -27,14 +27,14 @@ export async function uploadAndAnalyze({ file, scope, role }) {
   return response.json();
 }
 
-export async function exportPdf({ datos_ui, recomendacion_ia, grafico_base64 }) {
+export async function exportPdf({ datos_ui, recomendacion_ia, graficos }) {
   const response = await fetch(`${API_BASE}/api/reports/export-pdf`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       datos_ui,
       recomendacion_ia,
-      grafico_base64: grafico_base64 || null,
+      graficos: graficos || [],
     }),
   });
 
@@ -49,5 +49,5 @@ export async function exportPdf({ datos_ui, recomendacion_ia, grafico_base64 }) 
   a.href = url;
   a.download = 'informe_ejecutivo_ia.pdf';
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }

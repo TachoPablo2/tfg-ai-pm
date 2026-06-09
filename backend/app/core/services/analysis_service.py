@@ -51,4 +51,4 @@ class AnalysisService:
         return resultado_final
 
 
-analysis_service = AnalysisService()
+

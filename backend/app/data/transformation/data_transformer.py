@@ -21,11 +21,16 @@ class JiraTransformer:
             "Summary": "Title",
             "Issue Type": "Issue_Type",
             "Custom field (Story Points)": "Story_Point",
+            "Custom field (10002)": "Story_Point",
             "Status": "Status",
             "Project key": "Project_Name",
         }
         rename_map = {k: v for k, v in mapeo_columnas.items() if k in df_crudo.columns}
         df = df_crudo.rename(columns=rename_map)
+
+        # Fallback si el CSV no tenía columna Project key
+        if "Project_Name" not in df.columns:
+            df["Project_Name"] = "Default Project"
 
         # 2. Ingeniería de Características (Tiempos)
         if "Created" in df.columns and "Resolved" in df.columns:

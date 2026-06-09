@@ -19,7 +19,7 @@ async def exportar_informe_pdf(
         buffer_pdf = report_service.generar_pdf_en_memoria(
             request.datos_ui,
             request.recomendacion_ia,
-            request.grafico_base64
+            request.graficos
         )
         
         buffer_pdf.seek(0)

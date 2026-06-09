@@ -36,18 +36,26 @@ export default function App() {
   const handleExportPdf = useCallback(async () => {
     if (!analysisData) return;
     try {
-      let grafico_base64 = null;
+      const graficos = [];
       if (chartRef.current) {
-        const svg = chartRef.current.querySelector('svg.recharts-surface');
-        if (svg) {
-          const xml = new XMLSerializer().serializeToString(svg);
-          grafico_base64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+        const svgs = chartRef.current.querySelectorAll('svg.recharts-surface');
+        for (const svg of svgs) {
+          const rect = svg.getBoundingClientRect();
+          const w = rect.width || 800;
+          const h = rect.height || 400;
+          const svgClone = svg.cloneNode(true);
+          svgClone.setAttribute('width', String(w));
+          svgClone.setAttribute('height', String(h));
+          svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          const xml = new XMLSerializer().serializeToString(svgClone);
+          const base64 = btoa(unescape(encodeURIComponent(xml)));
+          graficos.push('data:image/svg+xml;base64,' + base64);
         }
       }
       await exportPdf({
         datos_ui: analysisData.datos_ui,
         recomendacion_ia: analysisData.recomendacion_ia,
-        grafico_base64,
+        graficos,
       });
     } catch (err) {
       setError(err.message);

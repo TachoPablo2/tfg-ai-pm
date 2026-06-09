@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from pydantic import ValidationError
 
 from app.data.ingestion.file_reader import JiraFileReader
 from app.data.transformation.data_transformer import JiraTransformer
@@ -37,10 +38,12 @@ async def procesar_analisis(
 
     except FileValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except (ValueError, AnalysisError, LLMInferenceError) as e:
-        raise HTTPException(status_code=422, detail=str(e))
     except ModelInferenceError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except (AnalysisError, LLMInferenceError, ValueError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         logger.error(f"Error inesperado en /analyze/process: {str(e)}")
         raise HTTPException(status_code=500, detail="Error interno del servidor. Inténtelo de nuevo más tarde.")

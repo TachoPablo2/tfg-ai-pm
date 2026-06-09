@@ -67,7 +67,7 @@ function TareaCard({ tarea, icon: Icon, label, valueKey, colorKey }) {
   );
 }
 
-export default function DashboardView({ data, onExportPdf, chartRef }) {
+export default function DashboardView({ data, chartRef }) {
   const [tab, setTab] = useState('metrics');
 
   const kpis = data?.datos_ui?.UI_Header_KPIs || {};
@@ -209,7 +209,7 @@ export default function DashboardView({ data, onExportPdf, chartRef }) {
         </div>
       </div>
 
-      {tab === 'metrics' && (
+      <div className={tab !== 'metrics' ? 'hidden' : ''}>
         <div className="space-y-6" ref={chartRef}>
           <div>
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
@@ -218,8 +218,8 @@ export default function DashboardView({ data, onExportPdf, chartRef }) {
             </h3>
             {topRiesgos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {topRiesgos.map((t, i) => (
-                  <TareaCard key={i} tarea={t} icon={AlertTriangle} label="Riesgo" valueKey="Prob_Riesgo" colorKey="Gravedad" />
+                {topRiesgos.map((t) => (
+                  <TareaCard key={t.Issue_Key} tarea={t} icon={AlertTriangle} label="Riesgo" valueKey="Prob_Riesgo" colorKey="Gravedad" />
                 ))}
               </div>
             ) : (
@@ -236,8 +236,8 @@ export default function DashboardView({ data, onExportPdf, chartRef }) {
             </h3>
             {topRetrasos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {topRetrasos.map((t, i) => (
-                  <TareaCard key={i} tarea={t} icon={ArrowDown} label="Retraso" valueKey="Prob_Retraso" />
+                {topRetrasos.map((t) => (
+                  <TareaCard key={t.Issue_Key} tarea={t} icon={ArrowDown} label="Retraso" valueKey="Prob_Retraso" />
                 ))}
               </div>
             ) : (
@@ -325,9 +325,9 @@ export default function DashboardView({ data, onExportPdf, chartRef }) {
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}
                   />
                   <Bar dataKey="riesgo" radius={[4, 4, 0, 0]}>
-                    {tipoData.map((entry, i) => (
+                    {tipoData.map((entry) => (
                       <Cell
-                        key={i}
+                        key={entry.type}
                         fill={
                           entry.riesgo >= 0.6
                             ? '#EF4444'
@@ -350,9 +350,9 @@ export default function DashboardView({ data, onExportPdf, chartRef }) {
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {tab === 'llm' && (
+      <div className={tab !== 'llm' ? 'hidden' : ''}>
         <div className="bg-white border border-slate-200 rounded-xl p-8">
           {recomendacion ? (
             <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed whitespace-pre-line">
@@ -367,7 +367,7 @@ export default function DashboardView({ data, onExportPdf, chartRef }) {
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -44,7 +44,7 @@ class AnalysisResponse(BaseModel):
 class ReportRequest(BaseModel):
     datos_ui: dict
     recomendacion_ia: str = Field(..., min_length=1)
-    grafico_base64: str | None = None
+    graficos: List[str] = Field(default_factory=list)
 
 
 class AnalysisRequest(BaseModel):
