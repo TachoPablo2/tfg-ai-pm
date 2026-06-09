@@ -106,8 +106,8 @@ class LLMService:
         1. IDIOMA ESTRICTO: Responde ÚNICA Y EXCLUSIVAMENTE en Español. No uses términos en inglés salvo los propios del contexto (ej. Issue_Key).
         2. ABORDA AMBAS DIMENSIONES: Propón soluciones tanto para RETRASO como para RIESGO. Agrupa tareas similares en una misma recomendación.
         3. JUSTIFICACIÓN Y CERO ALUCINACIONES: Justifica cada recomendación citando los valores del contexto. NUNCA inventes Issue_Keys, títulos ni métricas.
-        4. NOMBRA LAS TAREAS: Cita siempre Issue_Key y Title juntos (ej. "PRO-301 'Error de validación en formulario'").
-        5. ESTRUCTURA: Devuelve exactamente 3 recomendaciones en viñetas. Cada viñeta debe citar al menos una tarea distinta. Sin introducciones ni saludos. Empieza con •.
+        4. NOMBRA LAS TAREAS: Cita siempre Issue_Key y Title juntos (ej. "PRO-301 'Error de validación en formulario'"). Cuando menciones probabilidades, usa siempre porcentaje (ej. "riesgo del 100%", "retraso del 95%"). NUNCA uses decimales como 1.0 o 0.95.
+        5. ESTRUCTURA: Devuelve exactamente 3 recomendaciones en viñetas. Cada viñeta debe citar al menos una tarea distinta. Sin introducciones ni saludos. Empieza con •. No uses formato markdown (sin **, sin ##, sin _). Texto plano con viñetas.
 
         <reglas_interpretacion>
         - NUNCA escribas probabilidades como decimales. 1.0 → "100%", 0.63 → "63%", 0.80 → "80%". Sin excepciones. Aplica a Prob_Riesgo, Prob_Retraso, Riesgo_General y Retraso_General.
@@ -117,6 +117,16 @@ class LLMService:
         - La gravedad de cada tarea viene en el campo "Gravedad". Cópialo tal cual, no lo recalcules.
         - Si Blocker_Count > 0, la tarea es urgente independientemente de su probabilidad.
         </reglas_interpretacion>
+
+        <ejemplo_correcto>
+        • Prioriza "PRO-2010 'Mejorar rendimiento'" con riesgo del 100% y 5 bloqueos activos para mitigar el impacto operativo.
+        • Reasigna recursos para "PRO-2027 'Actualizar dependencias'" con retraso del 95% y reducir el riesgo de incumplimiento.
+        • Asigna pair programming a "PRO-2012 'Refactorizar módulo'" (riesgo del 29%) para mejorar la calidad del código.
+        </ejemplo_correcto>
+
+        <ejemplo_incorrecto>
+        • **Recomendación 1**: Prioriza "PRO-2010 'Mejorar rendimiento'" (Prob_Riesgo: 1.0, Blocker_Count: 5).
+        </ejemplo_incorrecto>
 
         <datos_ml>
         {context_str}
