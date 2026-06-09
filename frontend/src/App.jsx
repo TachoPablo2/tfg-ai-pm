@@ -90,7 +90,7 @@ export default function App() {
   }, [analysisData, pdfLoading]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FA] font-sans">
+    <div className="min-h-screen flex flex-col bg-corporate-light font-sans">
       <Header
         showActions={phase === PHASES.DASHBOARD}
         onExportPdf={handleExportPdf}
@@ -123,7 +123,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="px-8 py-5 text-xs text-slate-300 flex justify-between items-center border-t border-slate-200 mt-auto shrink-0">
+      <footer className="px-8 py-5 text-xs text-slate-300 flex justify-between items-center border-t border-slate-200 mt-auto shrink-0 bg-white">
         <span>&copy; {new Date().getFullYear()} IDSS PMO Solutions. Todos los derechos reservados.</span>
         <span>Cumplimiento de Seguridad</span>
       </footer>

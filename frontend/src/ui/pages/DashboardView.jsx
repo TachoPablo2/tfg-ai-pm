@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar,
 } from "recharts";
 import {
   AlertTriangle, Shield, Clock, TrendingUp, MessageSquareText,
@@ -105,11 +105,6 @@ export default function DashboardView({ data, chartRef }) {
 
   const alertaActiva = estado.Alerta_Retraso_Global === "Activada";
 
-  const chartColor = (v) =>
-    v >= 0.6 ? "#EF4444" : v >= 0.3 ? "#F59E0B" : "#10B981";
-  const riesgoChartColor = chartColor(kpis.Riesgo_Promedio);
-  const retrasoChartColor = chartColor(kpis.Retraso_Promedio);
-
   return (
     <div className="max-w-6xl mx-auto pt-6 pb-12 space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -140,6 +135,7 @@ export default function DashboardView({ data, chartRef }) {
         <KpiCard
           label="Bloqueadas"
           value={formatNum(kpis.Tareas_Bloqueadas_Activas)}
+          subtitle={kpis.Tareas_Bloqueadas_Activas != null ? `de ${formatNum(kpis.Total_Tareas)} tareas` : undefined}
           color={kpis.Tareas_Bloqueadas_Activas > 0 ? "#EF4444" : "#10B981"}
         />
         <KpiCard
@@ -259,6 +255,7 @@ export default function DashboardView({ data, chartRef }) {
               </h3>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={evolucionRiesgoData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} />
                   <YAxis
                     domain={[0, 1]}
@@ -267,14 +264,15 @@ export default function DashboardView({ data, chartRef }) {
                   />
                   <Tooltip
                     formatter={(v) => [`${(v * 100).toFixed(1)}%`, "Riesgo"]}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
                   />
                   <Line
                     type="monotone"
                     dataKey="riesgo"
-                    stroke={riesgoChartColor}
+                    stroke="#0A2540"
                     strokeWidth={2}
-                    dot={{ r: 3, fill: riesgoChartColor }}
+                    dot={{ r: 3, fill: "#fff", stroke: "#0A2540", strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: "#0A2540", stroke: "#fff", strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -289,6 +287,7 @@ export default function DashboardView({ data, chartRef }) {
               </h3>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={evolucionRetrasoData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} />
                   <YAxis
                     domain={[0, 1]}
@@ -297,14 +296,15 @@ export default function DashboardView({ data, chartRef }) {
                   />
                   <Tooltip
                     formatter={(v) => [`${(v * 100).toFixed(1)}%`, "Retraso"]}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
                   />
                   <Line
                     type="monotone"
                     dataKey="retraso"
-                    stroke={retrasoChartColor}
+                    stroke="#0A2540"
                     strokeWidth={2}
-                    dot={{ r: 3, fill: retrasoChartColor }}
+                    dot={{ r: 3, fill: "#fff", stroke: "#0A2540", strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: "#0A2540", stroke: "#fff", strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -316,8 +316,9 @@ export default function DashboardView({ data, chartRef }) {
               <h3 className="text-sm font-semibold text-slate-700 mb-4">
                 Riesgo Promedio por Tipo de Tarea
               </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={tipoData}>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={tipoData} barSize={40}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                   <XAxis dataKey="type" tick={{ fontSize: 11, fill: "#94A3B8" }} />
                   <YAxis
                     domain={[0, 1]}
@@ -326,22 +327,9 @@ export default function DashboardView({ data, chartRef }) {
                   />
                   <Tooltip
                     formatter={(v) => [`${(v * 100).toFixed(1)}%`, "Riesgo"]}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
                   />
-                  <Bar dataKey="riesgo" radius={[4, 4, 0, 0]}>
-                    {tipoData.map((entry) => (
-                      <Cell
-                        key={entry.type}
-                        fill={
-                          entry.riesgo >= 0.6
-                            ? "#EF4444"
-                            : entry.riesgo >= 0.3
-                              ? "#F59E0B"
-                              : "#10B981"
-                        }
-                      />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="riesgo" radius={[6, 6, 0, 0]} fill="#0A2540" fillOpacity={0.85} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
