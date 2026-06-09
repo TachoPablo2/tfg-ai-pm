@@ -1,0 +1,16 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.DS_Store
+node_modules/
+.venv/
+env/
+.agents/
+notebooks/
+data/
+*.md
