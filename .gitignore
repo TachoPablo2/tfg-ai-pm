@@ -258,5 +258,6 @@ Icon
 # OpenCode / Agentes / Skills
 # =========================
 .agents/
+.impeccable/
 skills-lock.json
 python-reviewer.md
