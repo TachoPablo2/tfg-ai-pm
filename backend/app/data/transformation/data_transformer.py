@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,6 @@ class JiraTransformer:
     def transformar_exportacion(df_crudo: pd.DataFrame) -> pd.DataFrame:
         logger.info("Iniciando transformación de datos Jira...")
 
-        # 1. Renombrar variables Jira a la nomenclatura del modelo
         mapeo_columnas = {
             "Issue key": "Issue_Key",
             "Summary": "Title",
@@ -28,11 +26,9 @@ class JiraTransformer:
         rename_map = {k: v for k, v in mapeo_columnas.items() if k in df_crudo.columns}
         df = df_crudo.rename(columns=rename_map)
 
-        # Fallback si el CSV no tenía columna Project key
         if "Project_Name" not in df.columns:
             df["Project_Name"] = "Default Project"
 
-        # 2. Ingeniería de Características (Tiempos)
         if "Created" in df.columns and "Resolved" in df.columns:
             df["Created"] = pd.to_datetime(df["Created"], errors="coerce")
             df["Resolved"] = pd.to_datetime(df["Resolved"], errors="coerce")
@@ -51,13 +47,11 @@ class JiraTransformer:
         if "In_Progress_Minutes" not in df.columns:
             df["In_Progress_Minutes"] = df["Resolution_Time_Minutes"] * IN_PROGRESS_RATIO
 
-        # 3. Limpieza de Story Points
         if "Story_Point" in df.columns:
             df["Story_Point"] = pd.to_numeric(df["Story_Point"], errors="coerce").fillna(0.0)
         else:
             df["Story_Point"] = 0.0
 
-        # 4. Cálculo heurístico de Blocker_Count (solo si no existe ya)
         if "Blocker_Count" not in df.columns:
             columnas_bloqueo = [
                 col
@@ -71,22 +65,22 @@ class JiraTransformer:
                 else 0
             )
 
-        # 5. Patrón Fallback para variables históricas de auditoría
-        columnas_auditoria = {
+        columnas_auditoria_scalar = {
             "Project_ID": PROJECT_ID_DEFAULT,
             "Sprint_ID": SPRINT_ID_DEFAULT,
             "Sprint_State": "ACTIVE",
-            "Total_Effort_Minutes": df.get("Resolution_Time_Minutes", 0),
             "Title_Changed_After_Estimation": 0,
             "Description_Changed_After_Estimation": 0,
             "Story_Point_Changed_After_Estimation": 0,
         }
 
-        for col, valor_defecto in columnas_auditoria.items():
+        for col, valor_defecto in columnas_auditoria_scalar.items():
             if col not in df.columns:
                 df[col] = valor_defecto
 
-        # 6. Tipado explícito con downcasting para ahorrar memoria
+        if "Total_Effort_Minutes" not in df.columns:
+            df["Total_Effort_Minutes"] = df["Resolution_Time_Minutes"]
+
         df["Sprint_ID"] = (
             pd.to_numeric(df["Sprint_ID"], errors="coerce")
             .fillna(SPRINT_ID_DEFAULT)
@@ -105,5 +99,7 @@ class JiraTransformer:
 
     @staticmethod
     def dataframe_to_records(df: pd.DataFrame) -> list:
-        df_safe = df.replace({np.nan: None})
-        return df_safe.to_dict(orient="records")
+        numeric_cols = df.select_dtypes(include="number").columns
+        df[numeric_cols] = df[numeric_cols].fillna(0)
+        df = df.fillna("")
+        return df.to_dict(orient="records")

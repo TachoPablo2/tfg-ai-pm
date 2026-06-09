@@ -8,9 +8,14 @@ from app.core.exceptions import FileValidationError
 
 logger = logging.getLogger(__name__)
 
-MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+CHUNK_SIZE = 1024 * 1024  # 1 MB
 EXTENSIONES_VALIDAS = {"csv", "xlsx", "xls"}
 ENCODINGS_CSV = ["utf-8", "latin-1", "cp1252"]
+
+
+def _sanitize_filename(name: str) -> str:
+    return name.replace("\n", "").replace("\r", "")[:200]
 
 
 class JiraFileReader:
@@ -20,7 +25,8 @@ class JiraFileReader:
         if not archivo.filename:
             raise FileValidationError("El archivo no tiene nombre.")
 
-        logger.info(f"Ingestando archivo: {archivo.filename}")
+        safe_name = _sanitize_filename(archivo.filename)
+        logger.info(f"Ingestando archivo: {safe_name}")
 
         extension = archivo.filename.rsplit(".", 1)[-1].lower()
         if extension not in EXTENSIONES_VALIDAS:
@@ -29,12 +35,20 @@ class JiraFileReader:
             )
 
         try:
-            contenido = await archivo.read()
-            if len(contenido) > MAX_FILE_SIZE:
-                raise FileValidationError(
-                    f"El archivo excede el límite de {MAX_FILE_SIZE // (1024 * 1024)} MB."
-                )
+            chunks = []
+            total_size = 0
+            while True:
+                chunk = await archivo.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > MAX_FILE_SIZE:
+                    raise FileValidationError(
+                        f"El archivo excede el límite de {MAX_FILE_SIZE // (1024 * 1024)} MB."
+                    )
+                chunks.append(chunk)
 
+            contenido = b"".join(chunks)
             buffer = io.BytesIO(contenido)
 
             if extension == "csv":
@@ -51,7 +65,7 @@ class JiraFileReader:
         except FileValidationError:
             raise
         except Exception as e:
-            logger.error(f"Error crítico durante la lectura: {e}")
+            logger.error(f"Error durante la lectura: {e}")
             raise FileValidationError(f"No se pudo procesar el archivo: {e}") from e
 
     @staticmethod

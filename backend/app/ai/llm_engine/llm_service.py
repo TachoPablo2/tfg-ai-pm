@@ -18,73 +18,74 @@ EMPTY_PAYLOAD = {
     "LLM_Tab_2_Contexto": {},
 }
 
+LLM_TIMEOUT_SECONDS = 120
+
 
 class LLMService:
-    """
-    Servicio encargado de agregar las predicciones matemáticas, calcular los KPIs 
-    y ensamblar los prompts estrictos para inyectarlos en Llama 3 vía Ollama.
-    """
-    
+
     def __init__(self):
-        self.llm_model = 'llama3'
-    
+        self.llm_model = "llama3"
+
     async def generar_informe(self, predicciones: List[TaskPrediction], rol: str, alcance: str) -> dict:
-        """
-        Orquesta el flujo completo: Agrupación -> Prompting -> Inferencia LLM.
-        Devuelve tanto el Payload para React como el texto de la IA.
-        """
         if not predicciones:
+            from app.api.schemas.pydantic_models import DatosUI
             return {
-                "datos_ui": EMPTY_PAYLOAD,
+                "datos_ui": DatosUI(**EMPTY_PAYLOAD),
                 "recomendacion_ia": "No hay datos suficientes para generar recomendaciones.",
             }
 
-        # 1. Construir el contrato de datos (Bloques D, E, F del cuaderno)
         payload_sistema = self.construir_payload(predicciones, rol, alcance)
-        
-        # 2. Extraer SOLO el contexto específico para el LLM para no saturar tokens
+
         context_data_llm = payload_sistema.get("LLM_Tab_2_Contexto", {})
-        
-        # 3. Ingeniería de Prompts (Celda 3 del cuaderno)
+
         system_p, user_p = self._build_prompt(context_data_llm, rol, alcance)
-        
+
         logger.info(f"Iniciando solicitud a Ollama ({self.llm_model}) para {rol} en {alcance}...")
         start_time = time.time()
-        
-        # 4. Inferencia y Tolerancia a Fallos (Celda 4 del cuaderno)
+
         try:
-            response = await asyncio.to_thread(
-                ollama.chat,
-                model=self.llm_model,
-                messages=[
-                    {'role': 'system', 'content': system_p},
-                    {'role': 'user', 'content': user_p}
-                ],
-                stream=False,
-                options={
-                    "temperature": 0.3,
-                    "num_ctx": 4096
-                }
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    ollama.chat,
+                    model=self.llm_model,
+                    messages=[
+                        {"role": "system", "content": system_p},
+                        {"role": "user", "content": user_p},
+                    ],
+                    stream=False,
+                    options={
+                        "temperature": 0.3,
+                        "num_ctx": 4096,
+                    },
+                ),
+                timeout=LLM_TIMEOUT_SECONDS,
             )
-            
+
             latencia = time.time() - start_time
             logger.info(f"Tiempo total LLM: {latencia:.2f} segundos")
-            
-            texto_recomendacion = response['message']['content']
-            
+
+            texto_recomendacion = response["message"]["content"]
+
+        except asyncio.TimeoutError:
+            latencia = time.time() - start_time
+            logger.error(f"Timeout LLM tras {latencia:.2f}s")
+            raise LLMInferenceError(
+                f"El modelo LLM no respondió en {LLM_TIMEOUT_SECONDS}s. Inténtelo de nuevo."
+            )
         except Exception as e:
             latencia = time.time() - start_time
             logger.error(f"ERROR DE CONEXIÓN CON EL LLM (Latencia: {latencia:.2f}s): {e}")
             raise LLMInferenceError(f"LLM no disponible: {e}")
 
+        from app.api.schemas.pydantic_models import DatosUI
         return {
-            "datos_ui": payload_sistema,
-            "recomendacion_ia": texto_recomendacion
+            "datos_ui": DatosUI(**payload_sistema),
+            "recomendacion_ia": texto_recomendacion,
         }
 
     def _build_prompt(self, context_data_llm: dict, user_role: str, scope: str) -> tuple[str, str]:
         context_str = json.dumps(context_data_llm, indent=2, ensure_ascii=False)
-        
+
         if scope == "Sprint":
             focus = "ALCANCE SPRINT: Evalúa las predicciones de riesgo y retraso correspondientes a las tareas de esta iteración única. Tu prioridad es mitigar el impacto operativo inmediato analizando la carga de trabajo y los bloqueos diarios activos."
         else:
@@ -95,13 +96,12 @@ class LLMService:
         else:
             instruccion_rol = "ROL PMO: Eres un consultor estratégico. Genera recomendaciones estructurales (cambios metodológicos, reajuste de presupuesto, auditoría de procesos corporativos, balanceo de capacidad técnica). Usa un tono analítico, formal y directivo."
 
-        # 3. Ensamblaje del System Prompt Maestro
         system_prompt = f"""
         Eres un Sistema Inteligente de Apoyo a la Decisión para la gestión ágil de proyectos.
-        
+
         {instruccion_rol}
         {focus}
-        
+
         REGLAS ESTRICTAS DE NEGOCIO:
         1. IDIOMA ESTRICTO: Responde ÚNICA Y EXCLUSIVAMENTE en Español. No uses términos en inglés salvo los propios del contexto (ej. Issue_Key).
         2. ABORDA AMBAS DIMENSIONES: Propón soluciones tanto para RETRASO como para RIESGO. Agrupa tareas similares en una misma recomendación.
@@ -122,80 +122,75 @@ class LLMService:
         {context_str}
         </datos_ml>
         """
-        
+
         user_prompt = "Redacta el reporte de recomendaciones estratégicas en perfecto español basándote estrictamente en las predicciones proporcionadas."
         return system_prompt, user_prompt
 
     def construir_payload(self, predicciones: List[TaskPrediction], rol: str, alcance: str) -> Dict[str, Any]:
-        """
-        Agrega las predicciones matemáticas y calcula los KPIs.
-        Devuelve el diccionario en crudo (no en string) para facilitar su manejo.
-        """
         df_analisis = pd.DataFrame([p.model_dump() for p in predicciones])
-        
-        # D.1. Top Riesgos
-        cond_riesgo = (df_analisis['Prob_Riesgo'] > 0.55) | (df_analisis['Blocker_Count'] > 0)
+
+        cond_riesgo = (df_analisis["Prob_Riesgo"] > 0.55) | (df_analisis["Blocker_Count"] > 0)
         top_riesgos_df = df_analisis[cond_riesgo].sort_values(
-            by=['Blocker_Count', 'Prob_Riesgo'], ascending=[False, False]
-        ).head(3)
-        
-        # Rendondeamos a 2 decimales igual que en el for-loop del cuaderno
-        top_riesgos_df['Prob_Riesgo'] = top_riesgos_df['Prob_Riesgo'].round(2)
+            by=["Blocker_Count", "Prob_Riesgo"], ascending=[False, False]
+        ).head(3).copy()
+
+        top_riesgos_df["Prob_Riesgo"] = top_riesgos_df["Prob_Riesgo"].round(2)
         lista_top_riesgos = top_riesgos_df[[
-            'Issue_Key', 'Issue_Type', 'Title', 'Blocker_Count', 'Prob_Riesgo', 'Gravedad'
-        ]].to_dict(orient='records')
+            "Issue_Key", "Issue_Type", "Title", "Blocker_Count", "Prob_Riesgo", "Gravedad"
+        ]].to_dict(orient="records")
 
-        # D.2. Top Retrasos
-        cond_retraso = df_analisis['Prob_Retraso'] > 0.55
+        cond_retraso = df_analisis["Prob_Retraso"] > 0.55
         top_retrasos_df = df_analisis[cond_retraso].sort_values(
-            by='Prob_Retraso', ascending=False
-        ).head(3)
-        
-        top_retrasos_df['Prob_Retraso'] = top_retrasos_df['Prob_Retraso'].round(2)
-        lista_top_retrasos = top_retrasos_df[[
-            'Issue_Key', 'Issue_Type', 'Title', 'Prob_Retraso'
-        ]].to_dict(orient='records')
+            by="Prob_Retraso", ascending=False
+        ).head(3).copy()
 
-        # E.1. KPIs Transversales
-        kpi_riesgo_medio = float(df_analisis['Prob_Riesgo'].mean())
-        kpi_retraso_medio = float(df_analisis['Prob_Retraso'].mean())
-        tareas_bloqueadas_total = int((df_analisis['Blocker_Count'] > 0).sum())
-        total_story_points = float(df_analisis['Story_Points'].sum())
-        
+        top_retrasos_df["Prob_Retraso"] = top_retrasos_df["Prob_Retraso"].round(2)
+        lista_top_retrasos = top_retrasos_df[[
+            "Issue_Key", "Issue_Type", "Title", "Prob_Retraso"
+        ]].to_dict(orient="records")
+
+        kpi_riesgo_medio = float(df_analisis["Prob_Riesgo"].mean())
+        kpi_retraso_medio = float(df_analisis["Prob_Retraso"].mean())
+        tareas_bloqueadas_total = int((df_analisis["Blocker_Count"] > 0).sum())
+        total_story_points = float(df_analisis["Story_Points"].sum())
+
         semaforo_global = "Rojo" if kpi_riesgo_medio >= 0.60 else "Amarillo" if kpi_riesgo_medio >= 0.30 else "Verde"
-        
-        if 'Status' in df_analisis.columns:
-            tareas_cerradas = len(df_analisis[df_analisis['Status'].str.lower().isin(['closed', 'done', 'resolved', 'cerrada'])])
+
+        if "Status" in df_analisis.columns:
+            tareas_cerradas = len(df_analisis[df_analisis["Status"].str.lower().isin(["closed", "done", "resolved", "cerrada"])])
         else:
             tareas_cerradas = 0
         tasa_completado = round((tareas_cerradas / max(1, len(df_analisis))) * 100, 2)
-        
-        # E.2. Métricas de Impacto de Negocio
+
         tareas_criticas = df_analisis[
-            (df_analisis['Prob_Riesgo'] > 0.7) | 
-            (df_analisis['Prob_Retraso'] > 0.7) | 
-            (df_analisis['Blocker_Count'] > 0)
+            (df_analisis["Prob_Riesgo"] > 0.7)
+            | (df_analisis["Prob_Retraso"] > 0.7)
+            | (df_analisis["Blocker_Count"] > 0)
         ]
-        esfuerzo_en_riesgo_col = 'Story_Points' if 'Story_Points' in df_analisis.columns else 'Total_Effort_Minutes'
-        esfuerzo_en_riesgo = float(tareas_criticas.get(esfuerzo_en_riesgo_col, pd.Series([0])).sum())
-        
-        # E.3. Tendencias Temporales (BIFURCACIÓN POR ALCANCE - Notebook 05)
+        esfuerzo_col = "Story_Points" if "Story_Points" in df_analisis.columns else "Total_Effort_Minutes"
+        if esfuerzo_col in tareas_criticas.columns:
+            esfuerzo_en_riesgo = float(tareas_criticas[esfuerzo_col].sum())
+        else:
+            esfuerzo_en_riesgo = 0.0
+
         evolucion_riesgo = {}
         evolucion_retraso = {}
         grafico_riesgo_tipo = {}
 
-        if alcance == "Proyecto" and 'Sprint_ID' in df_analisis.columns:
-            evolucion_riesgo = df_analisis.groupby('Sprint_ID')['Prob_Riesgo'].mean().round(2).to_dict()
-            evolucion_retraso = df_analisis.groupby('Sprint_ID')['Prob_Retraso'].mean().round(2).to_dict()
-        elif 'Created_Date' in df_analisis.columns and not df_analisis['Created_Date'].isnull().all():
-            df_analisis['Dia'] = pd.to_datetime(df_analisis['Created_Date'], errors='coerce').dt.date
-            df_valido = df_analisis.dropna(subset=['Dia'])
+        if alcance == "Proyecto" and "Sprint_ID" in df_analisis.columns:
+            evolucion_riesgo = df_analisis.groupby("Sprint_ID")["Prob_Riesgo"].mean().round(2).to_dict()
+            evolucion_retraso = df_analisis.groupby("Sprint_ID")["Prob_Retraso"].mean().round(2).to_dict()
+        elif "Created_Date" in df_analisis.columns and not df_analisis["Created_Date"].isnull().all():
+            df_analisis = df_analisis.copy()
+            df_analisis["Dia"] = pd.to_datetime(df_analisis["Created_Date"], errors="coerce").dt.date
+            df_valido = df_analisis.dropna(subset=["Dia"])
             if not df_valido.empty:
-                evolucion_riesgo = df_valido.groupby(df_valido['Dia'].astype(str))['Prob_Riesgo'].mean().round(2).to_dict()
-                evolucion_retraso = df_valido.groupby(df_valido['Dia'].astype(str))['Prob_Retraso'].mean().round(2).to_dict()
-        
-        if 'Issue_Type' in df_analisis.columns:
-            grafico_riesgo_tipo = df_analisis.groupby('Issue_Type')['Prob_Riesgo'].mean().round(2).to_dict()
+                evolucion_riesgo = df_valido.groupby(df_valido["Dia"].astype(str))["Prob_Riesgo"].mean().round(2).to_dict()
+                evolucion_retraso = df_valido.groupby(df_valido["Dia"].astype(str))["Prob_Retraso"].mean().round(2).to_dict()
+
+        if "Issue_Type" in df_analisis.columns:
+            grafico_riesgo_tipo = df_analisis.groupby("Issue_Type")["Prob_Riesgo"].mean().round(2).to_dict()
+
         return {
             "Configuracion": {"Alcance": alcance, "Rol": rol},
             "UI_Header_KPIs": {
@@ -204,29 +199,30 @@ class LLMService:
                 "Esfuerzo_Total": total_story_points,
                 "Tareas_Bloqueadas_Activas": tareas_bloqueadas_total,
                 "Riesgo_Promedio": round(kpi_riesgo_medio, 2),
-                "Retraso_Promedio": round(kpi_retraso_medio, 2)
+                "Retraso_Promedio": round(kpi_retraso_medio, 2),
             },
             "UI_Tab_1_Estado": {
                 "Semaforo_Riesgo_Global": semaforo_global,
                 "Alerta_Retraso_Global": "Activada" if kpi_retraso_medio > 0.50 else "Desactivada",
                 "Grafico_Riesgo_por_Tipo": grafico_riesgo_tipo,
                 "Grafico_Evolucion_Riesgo": evolucion_riesgo,
-                "Grafico_Evolucion_Retraso": evolucion_retraso
+                "Grafico_Evolucion_Retraso": evolucion_retraso,
             },
             "LLM_Tab_2_Contexto": {
                 "Metricas_Globales_Negocio": {
                     "Riesgo_General": round(kpi_riesgo_medio, 2),
                     "Retraso_General": round(kpi_retraso_medio, 2),
                     "Total_Bloqueos_Activos": tareas_bloqueadas_total,
-                    "Esfuerzo_Total_Comprometido_En_Riesgo": esfuerzo_en_riesgo
+                    "Esfuerzo_Total_Comprometido_En_Riesgo": esfuerzo_en_riesgo,
                 },
                 "Tendencias": {
                     "Evolucion_Riesgo": evolucion_riesgo,
-                    "Evolucion_Retraso": evolucion_retraso
+                    "Evolucion_Retraso": evolucion_retraso,
                 },
                 "Top_Tareas_Riesgo_Bloqueos": lista_top_riesgos,
-                "Top_Tareas_Retraso_Cronograma": lista_top_retrasos
-            }
+                "Top_Tareas_Retraso_Cronograma": lista_top_retrasos,
+            },
         }
+
 
 llm_service = LLMService()

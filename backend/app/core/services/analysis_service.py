@@ -39,8 +39,9 @@ class AnalysisService:
             datos_ui = self._llm_service.construir_payload(
                 predicciones, request_data.rol, request_data.alcance
             )
+            from app.api.schemas.pydantic_models import DatosUI
             resultado_final = {
-                "datos_ui": datos_ui,
+                "datos_ui": DatosUI(**datos_ui),
                 "recomendacion_ia": (
                     "Sistema de recomendaciones temporalmente no disponible. "
                     "El dashboard de métricas sigue operativo. Por favor, revise los "

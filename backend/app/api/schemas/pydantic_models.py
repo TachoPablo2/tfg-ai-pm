@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -19,7 +19,7 @@ class TaskRecord(BaseModel):
     Story_Point_Changed_After_Estimation: int = Field(..., description="0 o 1 si la estimación cambió")
     Blocker_Count: int = Field(..., description="Número de impedimentos/bloqueos registrados")
     Status: str = Field(default="Open", description="Estado actual de la tarea (ej. Open, Closed, Done)")
-    Created_Date: str | None = Field(default=None, description="Fecha de creación (YYYY-MM-DD)")
+    Created_Date: Optional[str] = Field(default=None, description="Fecha de creación (YYYY-MM-DD)")
 
 
 class TaskPrediction(BaseModel):
@@ -30,14 +30,57 @@ class TaskPrediction(BaseModel):
     Story_Points: float
     Blocker_Count: int
     Sprint_ID: int = Field(default=1)
-    Created_Date: str | None = None
+    Created_Date: Optional[str] = None
     Prob_Riesgo: float = Field(..., ge=0.0, le=1.0)
     Prob_Retraso: float = Field(..., ge=0.0, le=1.0)
     Gravedad: str
 
 
+class ConfiguracionUI(BaseModel):
+    Alcance: str = ""
+    Rol: str = ""
+
+
+class HeaderKPIs(BaseModel):
+    Total_Tareas: int = 0
+    Tasa_Completado_Pct: float = 0.0
+    Esfuerzo_Total: float = 0.0
+    Tareas_Bloqueadas_Activas: int = 0
+    Riesgo_Promedio: float = 0.0
+    Retraso_Promedio: float = 0.0
+
+
+class Tab1Estado(BaseModel):
+    Semaforo_Riesgo_Global: str = "Verde"
+    Alerta_Retraso_Global: str = "Desactivada"
+    Grafico_Riesgo_por_Tipo: dict = {}
+    Grafico_Evolucion_Riesgo: dict = {}
+    Grafico_Evolucion_Retraso: dict = {}
+
+
+class MetricasNegocio(BaseModel):
+    Riesgo_General: float = 0.0
+    Retraso_General: float = 0.0
+    Total_Bloqueos_Activos: int = 0
+    Esfuerzo_Total_Comprometido_En_Riesgo: float = 0.0
+
+
+class LLMContexto(BaseModel):
+    Metricas_Globales_Negocio: MetricasNegocio = MetricasNegocio()
+    Tendencias: dict = {}
+    Top_Tareas_Riesgo_Bloqueos: list = []
+    Top_Tareas_Retraso_Cronograma: list = []
+
+
+class DatosUI(BaseModel):
+    Configuracion: ConfiguracionUI = ConfiguracionUI()
+    UI_Header_KPIs: HeaderKPIs = HeaderKPIs()
+    UI_Tab_1_Estado: Tab1Estado = Tab1Estado()
+    LLM_Tab_2_Contexto: LLMContexto = LLMContexto()
+
+
 class AnalysisResponse(BaseModel):
-    datos_ui: dict
+    datos_ui: DatosUI
     recomendacion_ia: str
 
 
