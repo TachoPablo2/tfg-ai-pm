@@ -103,12 +103,13 @@ class ReportService:
 
             self._add_header(pdf, datos_ui)
             self._add_kpis_section(pdf, datos_ui)
+            self._add_top_tasks_section(pdf, datos_ui)
 
             tiene_grafico = bool(graficos)
             if tiene_grafico:
-                self._add_charts_section(pdf, graficos)
+                self._add_charts_section(pdf, graficos, "3")
 
-            num_seccion = "3" if tiene_grafico else "2"
+            num_seccion = "4" if tiene_grafico else "3"
             self._add_ia_recommendations(pdf, recomendacion_ia, num_seccion)
 
             pdf_bytes = pdf.output(dest="S")
@@ -166,14 +167,48 @@ class ReportService:
             pdf.cell(usable, 7, txt=f"- {label}: {valor}", ln=True)
         pdf.ln(6)
 
-    def _add_charts_section(self, pdf: FPDF, graficos: list[str]) -> None:
+    def _add_top_tasks_section(self, pdf: FPDF, datos_ui: dict) -> None:
+        contexto = datos_ui.get("LLM_Tab_2_Contexto", {})
+        top_riesgos = contexto.get("Top_Tareas_Riesgo_Bloqueos", [])
+        top_retrasos = contexto.get("Top_Tareas_Retraso_Cronograma", [])
+        if not top_riesgos and not top_retrasos:
+            return
+
+        usable = pdf.w - pdf.l_margin - pdf.r_margin
+        self._font(pdf, "B", 13)
+        pdf.cell(usable, 9, txt="2. Tareas Criticas Detectadas", ln=True)
+        pdf.ln(3)
+
+        if top_riesgos:
+            self._font(pdf, "B", 10)
+            pdf.cell(usable, 7, txt="Tareas en Riesgo:", ln=True)
+            self._font(pdf, "", 9)
+            for t in top_riesgos:
+                riesgo_pct = f"{float(t.get('Prob_Riesgo', 0)) * 100:.0f}%"
+                bloqueos = t.get("Blocker_Count", 0)
+                gravedad = t.get("Gravedad", "N/A")
+                linea = f"- {t.get('Issue_Key', 'N/A')}: {t.get('Title', '')} (riesgo {riesgo_pct}, {bloqueos} bloqueos, {gravedad})"
+                pdf.multi_cell(usable, 5, new_x="LMARGIN", new_y="NEXT", txt=linea)
+            pdf.ln(2)
+
+        if top_retrasos:
+            self._font(pdf, "B", 10)
+            pdf.cell(usable, 7, txt="Tareas con Retraso:", ln=True)
+            self._font(pdf, "", 9)
+            for t in top_retrasos:
+                retraso_pct = f"{float(t.get('Prob_Retraso', 0)) * 100:.0f}%"
+                linea = f"- {t.get('Issue_Key', 'N/A')}: {t.get('Title', '')} (retraso {retraso_pct})"
+                pdf.multi_cell(usable, 5, new_x="LMARGIN", new_y="NEXT", txt=linea)
+            pdf.ln(4)
+
+    def _add_charts_section(self, pdf: FPDF, graficos: list[str], num_seccion: str = "3") -> None:
         from PIL import Image as PILImage
 
         margin = pdf.l_margin
         usable = pdf.w - pdf.l_margin - pdf.r_margin
 
         self._font(pdf, "B", 13)
-        pdf.cell(usable, 9, txt="2. Evolucion del Riesgo y Retraso", ln=True)
+        pdf.cell(usable, 9, txt=f"{num_seccion}. Evolucion del Riesgo y Retraso", ln=True)
         pdf.ln(2)
         for grafico in graficos:
             try:
@@ -209,7 +244,14 @@ class ReportService:
             head = raw[:500]
             if b"<svg" in head:
                 if HAS_CAIROSVG:
-                    return cairosvg.svg2png(bytestring=raw)
+                    svg_str = raw.decode("utf-8")
+                    insert_pos = svg_str.index(">") + 1
+                    svg_str = (
+                        svg_str[:insert_pos]
+                        + '<rect width="100%" height="100%" fill="white"/>'
+                        + svg_str[insert_pos:]
+                    )
+                    return cairosvg.svg2png(bytestring=svg_str.encode("utf-8"))
                 else:
                     raise ReportGenerationError(
                         "El grafico es SVG pero cairosvg no esta instalado. "
@@ -226,7 +268,7 @@ class ReportService:
     ) -> None:
         usable = pdf.w - pdf.l_margin - pdf.r_margin
         self._font(pdf, "B", 13)
-        pdf.cell(usable, 9, txt=f"{num_seccion}. Recomendaciones Estrategicas (LLM)", ln=True)
+        pdf.cell(usable, 9, txt=f"{num_seccion}. Recomendaciones Estrategicas (IA)", ln=True)
         pdf.ln(2)
         self._font(pdf, "", 10)
         pdf.multi_cell(usable, 5.5, txt=recomendacion_ia)
