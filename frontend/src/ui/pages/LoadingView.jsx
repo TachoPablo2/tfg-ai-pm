@@ -18,7 +18,7 @@ export default function LoadingView() {
   }, [activePhase]);
 
   return (
-    <div className="max-w-lg mx-auto pt-20 flex flex-col items-center">
+    <div className="max-w-lg mx-auto py-20 flex flex-col items-center my-auto">
       <h2 className="text-xl font-semibold text-slate-800 mb-2">
         Procesando análisis
       </h2>

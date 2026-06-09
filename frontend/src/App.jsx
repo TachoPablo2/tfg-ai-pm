@@ -113,7 +113,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="flex-1 px-8">
+      <main className="flex-1 px-8 flex flex-col">
         {phase === PHASES.INGESTA && (
           <IngestaView onStartAnalysis={handleStartAnalysis} />
         )}
