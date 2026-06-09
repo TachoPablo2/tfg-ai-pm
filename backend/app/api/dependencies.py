@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from fastapi import Depends
 
 from app.ai.ml_models.predictor import ml_predictor
@@ -17,7 +15,3 @@ async def get_analysis_service() -> AnalysisService:
 
 async def get_report_service() -> ReportService:
     return ReportService()
-
-
-AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
-ReportServiceDep = Annotated[ReportService, Depends(get_report_service)]
