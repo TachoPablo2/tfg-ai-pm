@@ -1,6 +1,6 @@
-import { FileDown, Plus } from 'lucide-react';
+import { FileDown, Plus, Loader2 } from "lucide-react";
 
-export default function Header({ onExportPdf, onNewAnalysis, showActions }) {
+export default function Header({ onExportPdf, onNewAnalysis, showActions, pdfLoading }) {
   return (
     <header className="border-b border-corporate-border bg-white px-8 py-4 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-3">
@@ -17,10 +17,15 @@ export default function Header({ onExportPdf, onNewAnalysis, showActions }) {
         <div className="flex items-center gap-3">
           <button
             onClick={onExportPdf}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#0A2540] border border-[#0A2540] rounded-lg hover:bg-[#0A2540] hover:text-white transition-colors"
+            disabled={pdfLoading}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#0A2540] border border-[#0A2540] rounded-lg hover:bg-[#0A2540] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FileDown className="w-4 h-4" />
-            Exportar PDF
+            {pdfLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            {pdfLoading ? "Generando..." : "Exportar PDF"}
           </button>
           <button
             onClick={onNewAnalysis}

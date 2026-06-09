@@ -1,42 +1,42 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, Cell,
-} from 'recharts';
+} from "recharts";
 import {
   AlertTriangle, Shield, Clock, TrendingUp, MessageSquareText,
   ArrowDown, AlertCircle,
-} from 'lucide-react';
-import KpiCard from '../components/KpiCard';
+} from "lucide-react";
+import KpiCard from "../components/KpiCard";
 
 function kpiColor(value) {
-  if (value == null) return '#0F172A';
-  if (value >= 0.6) return '#EF4444';
-  if (value >= 0.3) return '#F59E0B';
-  return '#10B981';
+  if (value == null) return "#0F172A";
+  if (value >= 0.6) return "#EF4444";
+  if (value >= 0.3) return "#F59E0B";
+  return "#10B981";
 }
 
 function formatPct(v) {
-  if (v == null) return '---';
+  if (v == null) return "---";
   return `${(v * 100).toFixed(0)}%`;
 }
 
 function formatNum(v) {
-  if (v == null) return '---';
-  return Number(v).toLocaleString('es-ES', { maximumFractionDigits: 1 });
+  if (v == null) return "---";
+  return Number(v).toLocaleString("es-ES", { maximumFractionDigits: 1 });
 }
 
 function gravedadColor(g) {
-  if (!g) return '#64748B';
-  if (g.includes('Alto') || g.includes('Rojo')) return '#EF4444';
-  if (g.includes('Medio') || g.includes('Amarillo')) return '#F59E0B';
-  return '#10B981';
+  if (!g) return "#64748B";
+  if (g.includes("Alto") || g.includes("Rojo")) return "#EF4444";
+  if (g.includes("Medio") || g.includes("Amarillo")) return "#F59E0B";
+  return "#10B981";
 }
 
 function severityFromProb(v) {
-  if (v >= 0.75) return '🔴 Alto';
-  if (v >= 0.55) return '🟡 Medio';
-  return '🟢 Bajo';
+  if (v >= 0.75) return "Alto";
+  if (v >= 0.55) return "Medio";
+  return "Bajo";
 }
 
 function TareaCard({ tarea, icon: Icon, label, valueKey, colorKey }) {
@@ -68,12 +68,12 @@ function TareaCard({ tarea, icon: Icon, label, valueKey, colorKey }) {
 }
 
 export default function DashboardView({ data, chartRef }) {
-  const [tab, setTab] = useState('metrics');
+  const [tab, setTab] = useState("metrics");
 
   const kpis = data?.datos_ui?.UI_Header_KPIs || {};
   const estado = data?.datos_ui?.UI_Tab_1_Estado || {};
   const contexto = data?.datos_ui?.LLM_Tab_2_Contexto || {};
-  const recomendacion = data?.recomendacion_ia || '';
+  const recomendacion = data?.recomendacion_ia || "";
   const riesgoPorTipo = estado.Grafico_Riesgo_por_Tipo || {};
   const evolucionRiesgo = estado.Grafico_Evolucion_Riesgo || {};
   const evolucionRetraso = estado.Grafico_Evolucion_Retraso || {};
@@ -97,16 +97,16 @@ export default function DashboardView({ data, chartRef }) {
   }));
 
   const semaforoColor =
-    estado.Semaforo_Riesgo_Global === 'Rojo'
-      ? '#EF4444'
-      : estado.Semaforo_Riesgo_Global === 'Amarillo'
-        ? '#F59E0B'
-        : '#10B981';
+    estado.Semaforo_Riesgo_Global === "Rojo"
+      ? "#EF4444"
+      : estado.Semaforo_Riesgo_Global === "Amarillo"
+        ? "#F59E0B"
+        : "#10B981";
 
-  const alertaActiva = estado.Alerta_Retraso_Global === 'Activada';
+  const alertaActiva = estado.Alerta_Retraso_Global === "Activada";
 
   const chartColor = (v) =>
-    v >= 0.6 ? '#EF4444' : v >= 0.3 ? '#F59E0B' : '#10B981';
+    v >= 0.6 ? "#EF4444" : v >= 0.3 ? "#F59E0B" : "#10B981";
   const riesgoChartColor = chartColor(kpis.Riesgo_Promedio);
   const retrasoChartColor = chartColor(kpis.Retraso_Promedio);
 
@@ -116,31 +116,31 @@ export default function DashboardView({ data, chartRef }) {
         <KpiCard label="Total Tareas" value={formatNum(kpis.Total_Tareas)} color="#0F172A" />
         <KpiCard
           label="Completado"
-          value={kpis.Tasa_Completado_Pct != null ? `${kpis.Tasa_Completado_Pct}%` : '---'}
+          value={kpis.Tasa_Completado_Pct != null ? `${Number(kpis.Tasa_Completado_Pct).toFixed(0)}%` : "---"}
           color="#0F172A"
         />
         <KpiCard
           label="Esfuerzo Total"
-          value={kpis.Esfuerzo_Total != null ? formatNum(kpis.Esfuerzo_Total) : '---'}
+          value={kpis.Esfuerzo_Total != null ? formatNum(kpis.Esfuerzo_Total) : "---"}
           subtitle="Story Points"
           color="#0F172A"
         />
         <KpiCard
           label="Esf. en Riesgo"
-          value={metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo != null ? formatNum(metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo) : '---'}
+          value={metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo != null ? formatNum(metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo) : "---"}
           subtitle="Story Points"
           color={
             kpis.Esfuerzo_Total > 0 && metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo / kpis.Esfuerzo_Total > 0.5
-              ? '#EF4444'
+              ? "#EF4444"
               : metricasNegocio.Esfuerzo_Total_Comprometido_En_Riesgo > 0
-                ? '#F59E0B'
-                : '#10B981'
+                ? "#F59E0B"
+                : "#10B981"
           }
         />
         <KpiCard
           label="Bloqueadas"
           value={formatNum(kpis.Tareas_Bloqueadas_Activas)}
-          color={kpis.Tareas_Bloqueadas_Activas > 0 ? '#EF4444' : '#10B981'}
+          color={kpis.Tareas_Bloqueadas_Activas > 0 ? "#EF4444" : "#10B981"}
         />
         <KpiCard
           label="Riesgo Promedio"
@@ -158,18 +158,18 @@ export default function DashboardView({ data, chartRef }) {
         <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
           <Shield className="w-5 h-5" style={{ color: semaforoColor }} />
           <span className="text-sm text-slate-600">
-            Riesgo:{' '}
+            Riesgo:{" "}
             <span className="font-semibold" style={{ color: semaforoColor }}>
-              {estado.Semaforo_Riesgo_Global || '---'}
+              {estado.Semaforo_Riesgo_Global || "---"}
             </span>
           </span>
         </div>
         <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
-          <Clock className="w-5 h-5" style={{ color: alertaActiva ? '#F59E0B' : '#10B981' }} />
+          <Clock className="w-5 h-5" style={{ color: alertaActiva ? "#F59E0B" : "#10B981" }} />
           <span className="text-sm text-slate-600">
-            Alerta de retraso:{' '}
-            <span className="font-semibold" style={{ color: alertaActiva ? '#F59E0B' : '#10B981' }}>
-              {alertaActiva ? 'Activada' : 'Desactivada'}
+            Alerta de retraso:{" "}
+            <span className="font-semibold" style={{ color: alertaActiva ? "#F59E0B" : "#10B981" }}>
+              {alertaActiva ? "Activada" : "Desactivada"}
             </span>
           </span>
         </div>
@@ -177,31 +177,35 @@ export default function DashboardView({ data, chartRef }) {
           <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
             <AlertCircle className="w-5 h-5 text-[#EF4444]" />
             <span className="text-sm text-slate-600">
-              Bloqueos totales:{' '}
+              Bloqueos totales:{" "}
               <span className="font-semibold text-[#EF4444]">{metricasNegocio.Total_Bloqueos_Activos}</span>
             </span>
           </div>
         )}
       </div>
 
-      <div className="border-b border-slate-200">
+      <div className="border-b border-slate-200" role="tablist">
         <div className="flex gap-6">
           <button
-            onClick={() => setTab('metrics')}
+            onClick={() => setTab("metrics")}
+            role="tab"
+            aria-selected={tab === "metrics"}
             className={`pb-2 text-sm font-medium transition-colors border-b-2 ${
-              tab === 'metrics'
-                ? 'text-[#0A2540] border-[#0A2540]'
-                : 'text-slate-400 border-transparent hover:text-slate-600'
+              tab === "metrics"
+                ? "text-[#0A2540] border-[#0A2540]"
+                : "text-slate-400 border-transparent hover:text-slate-600"
             }`}
           >
             Metricas y Alertas
           </button>
           <button
-            onClick={() => setTab('llm')}
+            onClick={() => setTab("llm")}
+            role="tab"
+            aria-selected={tab === "llm"}
             className={`pb-2 text-sm font-medium transition-colors border-b-2 ${
-              tab === 'llm'
-                ? 'text-[#0A2540] border-[#0A2540]'
-                : 'text-slate-400 border-transparent hover:text-slate-600'
+              tab === "llm"
+                ? "text-[#0A2540] border-[#0A2540]"
+                : "text-slate-400 border-transparent hover:text-slate-600"
             }`}
           >
             Recomendaciones
@@ -209,7 +213,7 @@ export default function DashboardView({ data, chartRef }) {
         </div>
       </div>
 
-      <div className={tab !== 'metrics' ? 'hidden' : ''}>
+      <div className={tab !== "metrics" ? "hidden" : ""} role="tabpanel">
         <div className="space-y-6" ref={chartRef}>
           <div>
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
@@ -218,8 +222,8 @@ export default function DashboardView({ data, chartRef }) {
             </h3>
             {topRiesgos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {topRiesgos.map((t) => (
-                  <TareaCard key={t.Issue_Key} tarea={t} icon={AlertTriangle} label="Riesgo" valueKey="Prob_Riesgo" colorKey="Gravedad" />
+                {topRiesgos.map((t, i) => (
+                  <TareaCard key={`${t.Issue_Key}-${i}`} tarea={t} icon={AlertTriangle} label="Riesgo" valueKey="Prob_Riesgo" colorKey="Gravedad" />
                 ))}
               </div>
             ) : (
@@ -236,8 +240,8 @@ export default function DashboardView({ data, chartRef }) {
             </h3>
             {topRetrasos.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {topRetrasos.map((t) => (
-                  <TareaCard key={t.Issue_Key} tarea={t} icon={ArrowDown} label="Retraso" valueKey="Prob_Retraso" />
+                {topRetrasos.map((t, i) => (
+                  <TareaCard key={`${t.Issue_Key}-${i}`} tarea={t} icon={ArrowDown} label="Retraso" valueKey="Prob_Retraso" />
                 ))}
               </div>
             ) : (
@@ -255,15 +259,15 @@ export default function DashboardView({ data, chartRef }) {
               </h3>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={evolucionRiesgoData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} />
                   <YAxis
                     domain={[0, 1]}
                     tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                    tick={{ fontSize: 11, fill: '#94A3B8' }}
+                    tick={{ fontSize: 11, fill: "#94A3B8" }}
                   />
                   <Tooltip
-                    formatter={(v) => [`${(v * 100).toFixed(1)}%`, 'Riesgo']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}
+                    formatter={(v) => [`${(v * 100).toFixed(1)}%`, "Riesgo"]}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
                   />
                   <Line
                     type="monotone"
@@ -285,15 +289,15 @@ export default function DashboardView({ data, chartRef }) {
               </h3>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={evolucionRetrasoData}>
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} />
                   <YAxis
                     domain={[0, 1]}
                     tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                    tick={{ fontSize: 11, fill: '#94A3B8' }}
+                    tick={{ fontSize: 11, fill: "#94A3B8" }}
                   />
                   <Tooltip
-                    formatter={(v) => [`${(v * 100).toFixed(1)}%`, 'Retraso']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}
+                    formatter={(v) => [`${(v * 100).toFixed(1)}%`, "Retraso"]}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
                   />
                   <Line
                     type="monotone"
@@ -314,15 +318,15 @@ export default function DashboardView({ data, chartRef }) {
               </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={tipoData}>
-                  <XAxis dataKey="type" tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                  <XAxis dataKey="type" tick={{ fontSize: 11, fill: "#94A3B8" }} />
                   <YAxis
                     domain={[0, 1]}
                     tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                    tick={{ fontSize: 11, fill: '#94A3B8' }}
+                    tick={{ fontSize: 11, fill: "#94A3B8" }}
                   />
                   <Tooltip
-                    formatter={(v) => [`${(v * 100).toFixed(1)}%`, 'Riesgo']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}
+                    formatter={(v) => [`${(v * 100).toFixed(1)}%`, "Riesgo"]}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
                   />
                   <Bar dataKey="riesgo" radius={[4, 4, 0, 0]}>
                     {tipoData.map((entry) => (
@@ -330,10 +334,10 @@ export default function DashboardView({ data, chartRef }) {
                         key={entry.type}
                         fill={
                           entry.riesgo >= 0.6
-                            ? '#EF4444'
+                            ? "#EF4444"
                             : entry.riesgo >= 0.3
-                              ? '#F59E0B'
-                              : '#10B981'
+                              ? "#F59E0B"
+                              : "#10B981"
                         }
                       />
                     ))}
@@ -352,7 +356,7 @@ export default function DashboardView({ data, chartRef }) {
         </div>
       </div>
 
-      <div className={tab !== 'llm' ? 'hidden' : ''}>
+      <div className={tab !== "llm" ? "hidden" : ""} role="tabpanel">
         <div className="bg-white border border-slate-200 rounded-xl p-8">
           {recomendacion ? (
             <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed whitespace-pre-line">

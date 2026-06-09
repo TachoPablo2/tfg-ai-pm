@@ -1,16 +1,49 @@
-import { useState, useCallback, useRef } from 'react';
-import Header from './ui/components/Header';
-import IngestaView from './ui/pages/IngestaView';
-import LoadingView from './ui/pages/LoadingView';
-import DashboardView from './ui/pages/DashboardView';
-import { uploadAndAnalyze, exportPdf } from './ui/services/api';
+import { useState, useCallback, useRef } from "react";
+import Header from "./ui/components/Header";
+import IngestaView from "./ui/pages/IngestaView";
+import LoadingView from "./ui/pages/LoadingView";
+import DashboardView from "./ui/pages/DashboardView";
+import { uploadAndAnalyze, exportPdf } from "./ui/services/api";
 
 const PHASES = { INGESTA: 0, LOADING: 1, DASHBOARD: 2 };
+
+function svgToBase64(svgEl) {
+  const rect = svgEl.getBoundingClientRect();
+  const w = rect.width || 800;
+  const h = rect.height || 400;
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute("width", String(w));
+  clone.setAttribute("height", String(h));
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const allEls = svgEl.querySelectorAll("*");
+  const clonedEls = clone.querySelectorAll("*");
+  allEls.forEach((el, i) => {
+    const computed = window.getComputedStyle(el);
+    const target = clonedEls[i];
+    if (target) {
+      const importantStyles = ["fill", "stroke", "color", "font-family", "font-size", "font-weight"];
+      importantStyles.forEach((prop) => {
+        const val = computed.getPropertyValue(prop);
+        if (val && val !== "none" && target.style) {
+          target.style.setProperty(prop, val);
+        }
+      });
+    }
+  });
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const encoded = new TextEncoder().encode(xml);
+  let binary = "";
+  encoded.forEach((b) => (binary += String.fromCharCode(b)));
+  return "data:image/svg+xml;base64," + btoa(binary);
+}
 
 export default function App() {
   const [phase, setPhase] = useState(PHASES.INGESTA);
   const [analysisData, setAnalysisData] = useState(null);
   const [error, setError] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const chartRef = useRef(null);
 
   const handleStartAnalysis = useCallback(async (params) => {
@@ -22,7 +55,7 @@ export default function App() {
       setAnalysisData(result);
       setPhase(PHASES.DASHBOARD);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Error desconocido al procesar el análisis.");
       setPhase(PHASES.INGESTA);
     }
   }, []);
@@ -34,22 +67,14 @@ export default function App() {
   }, []);
 
   const handleExportPdf = useCallback(async () => {
-    if (!analysisData) return;
+    if (!analysisData || pdfLoading) return;
+    setPdfLoading(true);
     try {
       const graficos = [];
       if (chartRef.current) {
-        const svgs = chartRef.current.querySelectorAll('svg.recharts-surface');
+        const svgs = chartRef.current.querySelectorAll("svg.recharts-surface");
         for (const svg of svgs) {
-          const rect = svg.getBoundingClientRect();
-          const w = rect.width || 800;
-          const h = rect.height || 400;
-          const svgClone = svg.cloneNode(true);
-          svgClone.setAttribute('width', String(w));
-          svgClone.setAttribute('height', String(h));
-          svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-          const xml = new XMLSerializer().serializeToString(svgClone);
-          const base64 = btoa(unescape(encodeURIComponent(xml)));
-          graficos.push('data:image/svg+xml;base64,' + base64);
+          graficos.push(svgToBase64(svg));
         }
       }
       await exportPdf({
@@ -58,9 +83,11 @@ export default function App() {
         graficos,
       });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Error al exportar el PDF.");
+    } finally {
+      setPdfLoading(false);
     }
-  }, [analysisData]);
+  }, [analysisData, pdfLoading]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F9FA] font-sans">
@@ -68,9 +95,10 @@ export default function App() {
         showActions={phase === PHASES.DASHBOARD}
         onExportPdf={handleExportPdf}
         onNewAnalysis={handleNewAnalysis}
+        pdfLoading={pdfLoading}
       />
 
-      {error && (
+      {error && phase !== PHASES.LOADING && (
         <div className="px-8 pt-4 max-w-6xl mx-auto w-full">
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-center gap-2">
             <span className="font-medium">Error:</span> {error}
@@ -91,12 +119,12 @@ export default function App() {
         )}
         {phase === PHASES.LOADING && <LoadingView />}
         {phase === PHASES.DASHBOARD && (
-          <DashboardView data={analysisData} onExportPdf={handleExportPdf} chartRef={chartRef} />
+          <DashboardView data={analysisData} chartRef={chartRef} />
         )}
       </main>
 
       <footer className="px-8 py-5 text-xs text-slate-300 flex justify-between items-center border-t border-slate-200 mt-auto shrink-0">
-        <span>© 2024 IDSS PMO Solutions. Todos los derechos reservados.</span>
+        <span>&copy; {new Date().getFullYear()} IDSS PMO Solutions. Todos los derechos reservados.</span>
         <span>Cumplimiento de Seguridad</span>
       </footer>
     </div>

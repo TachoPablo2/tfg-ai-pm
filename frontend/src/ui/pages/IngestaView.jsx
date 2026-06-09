@@ -1,35 +1,68 @@
-import { useState, useRef } from 'react';
-import { CloudUpload, CheckCircle2, X, ArrowRight } from 'lucide-react';
+import { useState, useRef } from "react";
+import { CloudUpload, CheckCircle2, X, ArrowRight, Loader2 } from "lucide-react";
+
+const VALID_EXTENSIONS = [".csv", ".xlsx", ".xls"];
+const MAX_FILE_SIZE_MB = 50;
+
+function isValidFile(f) {
+  if (!f) return false;
+  const ext = "." + f.name.split(".").pop().toLowerCase();
+  return VALID_EXTENSIONS.includes(ext);
+}
 
 export default function IngestaView({ onStartAnalysis }) {
   const [file, setFile] = useState(null);
-  const [scope, setScope] = useState('sprint');
-  const [role, setRole] = useState('pm');
+  const [scope, setScope] = useState("sprint");
+  const [role, setRole] = useState("pm");
+  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
-    if (f) setFile(f);
+    setValidationError(null);
+    if (!f) return;
+    if (!isValidFile(f)) {
+      setValidationError("Formato no válido. Usa CSV, XLSX o XLS.");
+      return;
+    }
+    if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setValidationError(`El archivo supera ${MAX_FILE_SIZE_MB} MB.`);
+      return;
+    }
+    setFile(f);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
+    setValidationError(null);
     const f = e.dataTransfer?.files?.[0];
-    if (f) setFile(f);
+    if (!f) return;
+    if (!isValidFile(f)) {
+      setValidationError("Formato no válido. Usa CSV, XLSX o XLS.");
+      return;
+    }
+    if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setValidationError(`El archivo supera ${MAX_FILE_SIZE_MB} MB.`);
+      return;
+    }
+    setFile(f);
   };
 
   const handleDiscard = () => {
     setFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setValidationError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSubmit = () => {
-    if (!file) return;
-    onStartAnalysis({
-      file,
-      scope,
-      role,
-    });
+  const handleSubmit = async () => {
+    if (!file || submitting) return;
+    setSubmitting(true);
+    try {
+      await onStartAnalysis({ file, scope, role });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -45,7 +78,7 @@ export default function IngestaView({ onStartAnalysis }) {
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center justify-center bg-[#F8F9FA] hover:bg-white hover:border-slate-400 transition-colors cursor-pointer relative mb-10"
+        className="border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center justify-center bg-[#F8F9FA] hover:bg-white hover:border-slate-400 transition-colors cursor-pointer relative mb-6"
       >
         <input
           ref={fileInputRef}
@@ -77,11 +110,17 @@ export default function IngestaView({ onStartAnalysis }) {
               o haz clic para buscar en tu ordenador
             </span>
             <span className="text-xs text-slate-300 mt-1">
-              CSV, XLSX o XLS — Tamaño máximo 500 MB
+              CSV, XLSX o XLS — Tamaño máximo {MAX_FILE_SIZE_MB} MB
             </span>
           </div>
         )}
       </div>
+
+      {validationError && (
+        <div className="mb-6 text-center text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          {validationError}
+        </div>
+      )}
 
       {file && (
         <div className="flex justify-center mb-8">
@@ -103,8 +142,8 @@ export default function IngestaView({ onStartAnalysis }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { key: 'sprint', label: 'Sprint', desc: 'Analiza las tareas activas de una iteración específica.' },
-              { key: 'proyecto', label: 'Proyecto Completo', desc: 'Evalúa el histórico de tareas a lo largo del tiempo.' },
+              { key: "sprint", label: "Sprint", desc: "Analiza las tareas activas de una iteración específica." },
+              { key: "proyecto", label: "Proyecto Completo", desc: "Evalúa el histórico de tareas a lo largo del tiempo." },
             ].map((opt) => (
               <button
                 key={opt.key}
@@ -112,8 +151,8 @@ export default function IngestaView({ onStartAnalysis }) {
                 onClick={() => setScope(opt.key)}
                 className={`text-left p-4 border rounded-lg transition-all ${
                   scope === opt.key
-                    ? 'border-[#0A2540] shadow-sm bg-white'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    ? "border-[#0A2540] shadow-sm bg-white"
+                    : "border-slate-200 hover:border-slate-300 bg-white"
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -135,8 +174,8 @@ export default function IngestaView({ onStartAnalysis }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { key: 'pm', label: 'Director de Proyecto (PM)', desc: 'Recomendaciones tácticas centradas en la ejecución del equipo.' },
-              { key: 'pmo', label: 'Gestión de Proyectos (PMO)', desc: 'Recomendaciones estratégicas sobre procesos y metodología.' },
+              { key: "pm", label: "Director de Proyecto (PM)", desc: "Recomendaciones tácticas centradas en la ejecución del equipo." },
+              { key: "pmo", label: "Gestión de Proyectos (PMO)", desc: "Recomendaciones estratégicas sobre procesos y metodología." },
             ].map((opt) => (
               <button
                 key={opt.key}
@@ -144,8 +183,8 @@ export default function IngestaView({ onStartAnalysis }) {
                 onClick={() => setRole(opt.key)}
                 className={`text-left p-4 border rounded-lg transition-all ${
                   role === opt.key
-                    ? 'border-[#0A2540] shadow-sm bg-white'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    ? "border-[#0A2540] shadow-sm bg-white"
+                    : "border-slate-200 hover:border-slate-300 bg-white"
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -164,15 +203,24 @@ export default function IngestaView({ onStartAnalysis }) {
       <div className="mt-10 mb-8 flex justify-end">
         <button
           onClick={handleSubmit}
-          disabled={!file}
+          disabled={!file || submitting}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-            file
-              ? 'bg-[#0A2540] text-white hover:opacity-90'
-              : 'bg-[#0A2540] text-white/50 cursor-not-allowed'
+            file && !submitting
+              ? "bg-[#0A2540] text-white hover:opacity-90"
+              : "bg-[#0A2540] text-white/50 cursor-not-allowed"
           }`}
         >
-          Iniciar Análisis
-          <ArrowRight className="w-4 h-4" />
+          {submitting ? (
+            <>
+              Procesando...
+              <Loader2 className="w-4 h-4 animate-spin" />
+            </>
+          ) : (
+            <>
+              Iniciar Análisis
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </div>
     </div>
