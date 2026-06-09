@@ -48,15 +48,28 @@ def _find_font(name: str) -> str | None:
         p = font_dir / f"{name}.{ext}"
         if p.is_file():
             return str(p)
-    for p in sorted(font_dir.glob(f"{name}*.[tT][tT][fF]")):
-        return str(p)
-    return None
+        for p_sub in sorted(font_dir.rglob(f"{name}.{ext}")):
+            return str(p_sub)
+    candidates = sorted(font_dir.rglob(f"{name}*.[tT][tT][fF]"))
+    skip = ("-Bold", "-Oblique", "-Italic", "Bold", "Oblique", "Italic", "Mono")
+    for p in candidates:
+        p_stem = p.stem
+        if p_stem == name:
+            return str(p)
+    for p in candidates:
+        p_stem = p.stem
+        if not any(s in p_stem for s in skip):
+            return str(p)
+    return str(candidates[0]) if candidates else None
 
 
-FONT_REGULAR = _find_font("Arial")
-FONT_BOLD = _find_font("Arial Bold") or _find_font("Arialbd")
-FONT_ITALIC = _find_font("Arial Italic") or _find_font("Ariali")
-FONT_BOLD_ITALIC = _find_font("Arial Bold Italic") or _find_font("Arialbi")
+FONT_REGULAR = _find_font("Arial") or _find_font("DejaVuSans")
+FONT_BOLD = (_find_font("Arial Bold") or _find_font("Arialbd")
+             or _find_font("DejaVuSans-Bold"))
+FONT_ITALIC = (_find_font("Arial Italic") or _find_font("Ariali")
+               or _find_font("DejaVuSans-Oblique"))
+FONT_BOLD_ITALIC = (_find_font("Arial Bold Italic") or _find_font("Arialbi")
+                    or _find_font("DejaVuSans-BoldOblique"))
 
 FALLBACK_FONT = "Helvetica"
 
