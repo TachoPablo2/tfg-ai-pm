@@ -37,7 +37,7 @@ export default function LoadingView() {
               key={phase.key}
               className={`flex items-center gap-4 p-4 rounded-lg border transition-all duration-500 ${
                 isActive
-                  ? 'border-[#0A2540] bg-white shadow-sm'
+                  ? 'border-corporate-blue bg-white shadow-sm'
                   : isDone
                     ? 'border-green-200 bg-green-50/50'
                     : 'border-slate-200 bg-white opacity-40'
@@ -48,11 +48,11 @@ export default function LoadingView() {
                   isDone
                     ? 'bg-green-100 text-alert-green'
                     : isActive
-                      ? 'bg-[#0A2540]/10 text-[#0A2540]'
+                      ? 'bg-corporate-blue/10 text-corporate-blue'
                       : 'bg-slate-100 text-slate-300'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon aria-hidden="true" className="w-5 h-5" />
               </div>
 
               <div className="flex-1 min-w-0">
@@ -74,9 +74,9 @@ export default function LoadingView() {
                   <span className="text-alert-green text-sm font-medium">Completado</span>
                 ) : isActive ? (
                   <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#0A2540] animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#0A2540] animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#0A2540] animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-corporate-blue animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-corporate-blue animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-corporate-blue animate-bounce" style={{ animationDelay: '300ms' }} />
                   </span>
                 ) : (
                   <span className="text-slate-300 text-sm">Pendiente</span>

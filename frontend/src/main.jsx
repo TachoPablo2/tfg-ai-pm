@@ -16,7 +16,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] p-8">
+        <div className="min-h-screen flex items-center justify-center bg-corporate-light p-8">
           <div className="max-w-md text-center space-y-4">
             <h1 className="text-xl font-semibold text-slate-800">
               Algo salió mal
@@ -26,7 +26,7 @@ class ErrorBoundary extends Component {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-[#0A2540] text-white text-sm rounded-lg hover:opacity-90"
+              className="px-4 py-2 bg-corporate-blue text-white text-sm rounded-lg hover:opacity-90"
             >
               Recargar página
             </button>

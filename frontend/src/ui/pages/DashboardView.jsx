@@ -152,7 +152,7 @@ export default function DashboardView({ data, chartRef }) {
 
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
-          <Shield className="w-5 h-5" style={{ color: semaforoColor }} />
+          <Shield aria-hidden="true" className="w-5 h-5" style={{ color: semaforoColor }} />
           <span className="text-sm text-slate-600">
             Riesgo:{" "}
             <span className="font-semibold" style={{ color: semaforoColor }}>
@@ -161,7 +161,7 @@ export default function DashboardView({ data, chartRef }) {
           </span>
         </div>
         <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
-          <Clock className="w-5 h-5" style={{ color: alertaActiva ? "#F59E0B" : "#10B981" }} />
+          <Clock aria-hidden="true" className="w-5 h-5" style={{ color: alertaActiva ? "#F59E0B" : "#10B981" }} />
           <span className="text-sm text-slate-600">
             Alerta de retraso:{" "}
             <span className="font-semibold" style={{ color: alertaActiva ? "#F59E0B" : "#10B981" }}>
@@ -171,10 +171,10 @@ export default function DashboardView({ data, chartRef }) {
         </div>
         {metricasNegocio.Total_Bloqueos_Activos > 0 && (
           <div className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-[#EF4444]" />
+            <AlertCircle aria-hidden="true" className="w-5 h-5 text-alert-red" />
             <span className="text-sm text-slate-600">
               Bloqueos totales:{" "}
-              <span className="font-semibold text-[#EF4444]">{metricasNegocio.Total_Bloqueos_Activos}</span>
+              <span className="font-semibold text-alert-red">{metricasNegocio.Total_Bloqueos_Activos}</span>
             </span>
           </div>
         )}
@@ -188,7 +188,7 @@ export default function DashboardView({ data, chartRef }) {
             aria-selected={tab === "metrics"}
             className={`pb-2 text-sm font-medium transition-colors border-b-2 ${
               tab === "metrics"
-                ? "text-[#0A2540] border-[#0A2540]"
+                ? "text-corporate-blue border-corporate-blue"
                 : "text-slate-400 border-transparent hover:text-slate-600"
             }`}
           >
@@ -200,7 +200,7 @@ export default function DashboardView({ data, chartRef }) {
             aria-selected={tab === "llm"}
             className={`pb-2 text-sm font-medium transition-colors border-b-2 ${
               tab === "llm"
-                ? "text-[#0A2540] border-[#0A2540]"
+                ? "text-corporate-blue border-corporate-blue"
                 : "text-slate-400 border-transparent hover:text-slate-600"
             }`}
           >
@@ -213,7 +213,7 @@ export default function DashboardView({ data, chartRef }) {
         <div className="space-y-6" ref={chartRef}>
           <div>
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-[#EF4444]" />
+              <AlertTriangle aria-hidden="true" className="w-4 h-4 text-alert-red" />
               Tareas en Riesgo
             </h3>
             {topRiesgos.length > 0 ? (
@@ -231,7 +231,7 @@ export default function DashboardView({ data, chartRef }) {
 
           <div>
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-              <ArrowDown className="w-4 h-4 text-[#F59E0B]" />
+              <ArrowDown aria-hidden="true" className="w-4 h-4 text-alert-yellow" />
               Tareas con Retraso
             </h3>
             {topRetrasos.length > 0 ? (
@@ -250,7 +250,7 @@ export default function DashboardView({ data, chartRef }) {
           {evolucionRiesgoData.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-xl p-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp aria-hidden="true" className="w-4 h-4" />
                 Evolucion del Riesgo
               </h3>
               <ResponsiveContainer width="100%" height={260}>
@@ -282,7 +282,7 @@ export default function DashboardView({ data, chartRef }) {
           {evolucionRetrasoData.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-xl p-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp aria-hidden="true" className="w-4 h-4" />
                 Evolucion del Retraso
               </h3>
               <ResponsiveContainer width="100%" height={260}>
@@ -337,7 +337,7 @@ export default function DashboardView({ data, chartRef }) {
 
           {evolucionRiesgoData.length === 0 && evolucionRetrasoData.length === 0 && tipoData.length === 0 && (
             <div className="bg-white border border-slate-200 rounded-xl p-8 text-center">
-              <TrendingUp className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+              <TrendingUp aria-hidden="true" className="w-6 h-6 text-slate-300 mx-auto mb-2" />
               <p className="text-sm text-slate-400">No hay datos temporales para mostrar graficos.</p>
             </div>
           )}
@@ -352,7 +352,7 @@ export default function DashboardView({ data, chartRef }) {
             </div>
           ) : (
             <div className="text-center py-12">
-              <MessageSquareText className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+              <MessageSquareText aria-hidden="true" className="w-8 h-8 text-slate-300 mx-auto mb-3" />
               <p className="text-sm text-slate-400">
                 No hay recomendaciones disponibles.
               </p>

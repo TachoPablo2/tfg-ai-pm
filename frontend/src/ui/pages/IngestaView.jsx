@@ -78,7 +78,7 @@ export default function IngestaView({ onStartAnalysis }) {
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center justify-center bg-[#F8F9FA] hover:bg-white hover:border-slate-400 transition-colors cursor-pointer relative mb-6"
+        className="border-2 border-dashed border-slate-300 rounded-xl p-12 flex flex-col items-center justify-center bg-corporate-light hover:bg-white hover:border-slate-400 transition-colors cursor-pointer relative mb-6"
       >
         <input
           ref={fileInputRef}
@@ -91,7 +91,7 @@ export default function IngestaView({ onStartAnalysis }) {
         {file ? (
           <div className="flex flex-col items-center gap-3">
             <div className="bg-green-50 p-3 rounded-full">
-              <CheckCircle2 className="w-8 h-8 text-alert-green" strokeWidth={1.5} />
+              <CheckCircle2 aria-hidden="true" className="w-8 h-8 text-alert-green" strokeWidth={1.5} />
             </div>
             <span className="font-medium text-slate-800 text-sm">{file.name}</span>
             <span className="text-xs text-slate-400">
@@ -101,7 +101,7 @@ export default function IngestaView({ onStartAnalysis }) {
         ) : (
           <div className="flex flex-col items-center gap-3">
             <div className="bg-white p-3 rounded-full shadow-sm border border-slate-200">
-              <CloudUpload className="w-6 h-6 text-slate-500" strokeWidth={1.5} />
+              <CloudUpload aria-hidden="true" className="w-6 h-6 text-slate-500" strokeWidth={1.5} />
             </div>
             <span className="font-medium text-slate-700">
               Arrastra y suelta tu archivo aquí
@@ -128,7 +128,7 @@ export default function IngestaView({ onStartAnalysis }) {
             onClick={handleDiscard}
             className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-red-500 transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X aria-hidden="true" className="w-4 h-4" />
             Descartar archivo
           </button>
         </div>
@@ -151,14 +151,14 @@ export default function IngestaView({ onStartAnalysis }) {
                 onClick={() => setScope(opt.key)}
                 className={`text-left p-4 border rounded-lg transition-all ${
                   scope === opt.key
-                    ? "border-[#0A2540] shadow-sm bg-white"
+                    ? "border-corporate-blue shadow-sm bg-white"
                     : "border-slate-200 hover:border-slate-300 bg-white"
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-medium text-sm text-slate-800">{opt.label}</span>
                   {scope === opt.key && (
-                    <CheckCircle2 className="w-4 h-4 text-[#0A2540] shrink-0" />
+                    <CheckCircle2 aria-hidden="true" className="w-4 h-4 text-corporate-blue shrink-0" />
                   )}
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">{opt.desc}</p>
@@ -183,14 +183,14 @@ export default function IngestaView({ onStartAnalysis }) {
                 onClick={() => setRole(opt.key)}
                 className={`text-left p-4 border rounded-lg transition-all ${
                   role === opt.key
-                    ? "border-[#0A2540] shadow-sm bg-white"
+                    ? "border-corporate-blue shadow-sm bg-white"
                     : "border-slate-200 hover:border-slate-300 bg-white"
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <span className="font-medium text-sm text-slate-800">{opt.label}</span>
                   {role === opt.key && (
-                    <CheckCircle2 className="w-4 h-4 text-[#0A2540] shrink-0" />
+                    <CheckCircle2 aria-hidden="true" className="w-4 h-4 text-corporate-blue shrink-0" />
                   )}
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">{opt.desc}</p>
@@ -206,19 +206,19 @@ export default function IngestaView({ onStartAnalysis }) {
           disabled={!file || submitting}
           className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
             file && !submitting
-              ? "bg-[#0A2540] text-white hover:opacity-90"
-              : "bg-[#0A2540] text-white/50 cursor-not-allowed"
+              ? "bg-corporate-blue text-white hover:opacity-90"
+              : "bg-corporate-blue text-white/50 cursor-not-allowed"
           }`}
         >
           {submitting ? (
             <>
               Procesando...
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
             </>
           ) : (
             <>
               Iniciar Análisis
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight aria-hidden="true" className="w-4 h-4" />
             </>
           )}
         </button>
