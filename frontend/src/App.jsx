@@ -7,38 +7,6 @@ import { uploadAndAnalyze, exportPdf } from "./ui/services/api";
 
 const PHASES = { INGESTA: 0, LOADING: 1, DASHBOARD: 2 };
 
-function svgToBase64(svgEl) {
-  const rect = svgEl.getBoundingClientRect();
-  const w = rect.width || 800;
-  const h = rect.height || 400;
-  const clone = svgEl.cloneNode(true);
-  clone.setAttribute("width", String(w));
-  clone.setAttribute("height", String(h));
-  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-
-  const allEls = svgEl.querySelectorAll("*");
-  const clonedEls = clone.querySelectorAll("*");
-  allEls.forEach((el, i) => {
-    const computed = window.getComputedStyle(el);
-    const target = clonedEls[i];
-    if (target) {
-      const importantStyles = ["fill", "stroke", "color", "font-family", "font-size", "font-weight"];
-      importantStyles.forEach((prop) => {
-        const val = computed.getPropertyValue(prop);
-        if (val && val !== "none" && target.style) {
-          target.style.setProperty(prop, val);
-        }
-      });
-    }
-  });
-
-  const xml = new XMLSerializer().serializeToString(clone);
-  const encoded = new TextEncoder().encode(xml);
-  let binary = "";
-  encoded.forEach((b) => (binary += String.fromCharCode(b)));
-  return "data:image/svg+xml;base64," + btoa(binary);
-}
-
 export default function App() {
   const [phase, setPhase] = useState(PHASES.INGESTA);
   const [analysisData, setAnalysisData] = useState(null);
@@ -72,9 +40,49 @@ export default function App() {
     try {
       const graficos = [];
       if (chartRef.current) {
-        const svgs = chartRef.current.querySelectorAll("svg.recharts-surface");
-        for (const svg of svgs) {
-          graficos.push(svgToBase64(svg));
+        const wrappers = chartRef.current.querySelectorAll("[data-chart-wrapper]");
+        for (const wrapper of wrappers) {
+          const titleEl = wrapper.querySelector("h3");
+          const title = titleEl ? titleEl.textContent.trim() : "";
+          const svg = wrapper.querySelector("svg.recharts-surface");
+          if (svg) {
+            const clone = svg.cloneNode(true);
+            const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+            const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+            style.textContent = `
+              .chart-title { font-family: system-ui, sans-serif; font-size: 14px;
+                font-weight: 600; fill: #334155; }
+            `;
+            defs.appendChild(style);
+            clone.insertBefore(defs, clone.firstChild);
+            const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txt.setAttribute("x", "12");
+            txt.setAttribute("y", "22");
+            txt.setAttribute("class", "chart-title");
+            txt.textContent = title;
+            clone.insertBefore(txt, clone.firstChild);
+            const vb = (clone.getAttribute("viewBox") || "").split(" ");
+            if (vb.length === 4) {
+              vb[1] = "0";
+              vb[3] = String(parseInt(vb[3], 10) + 32);
+              clone.setAttribute("viewBox", vb.join(" "));
+            }
+            const rect = svg.getBoundingClientRect();
+            const w = rect.width || 800;
+            const h = (rect.height || 400) + 32;
+            clone.setAttribute("width", String(w));
+            clone.setAttribute("height", String(h));
+            const composer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            composer.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+            composer.setAttribute("width", String(w));
+            composer.setAttribute("height", String(h));
+            composer.appendChild(clone);
+            const xml = new XMLSerializer().serializeToString(composer);
+            const encoded = new TextEncoder().encode(xml);
+            let binary = "";
+            encoded.forEach((b) => (binary += String.fromCharCode(b)));
+            graficos.push("data:image/svg+xml;base64," + btoa(binary));
+          }
         }
       }
       await exportPdf({

@@ -248,7 +248,7 @@ export default function DashboardView({ data, chartRef }) {
           </div>
 
           {evolucionRiesgoData.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6">
+            <div data-chart-wrapper className="bg-white border border-slate-200 rounded-xl p-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <TrendingUp aria-hidden="true" className="w-4 h-4" />
                 Evolucion del Riesgo
@@ -256,7 +256,7 @@ export default function DashboardView({ data, chartRef }) {
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={evolucionRiesgoData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} angle={-45} textAnchor="end" height={60} interval="preserveStartEnd" />
                   <YAxis
                     domain={[0, 1]}
                     tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
@@ -280,7 +280,7 @@ export default function DashboardView({ data, chartRef }) {
           )}
 
           {evolucionRetrasoData.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6">
+            <div data-chart-wrapper className="bg-white border border-slate-200 rounded-xl p-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <TrendingUp aria-hidden="true" className="w-4 h-4" />
                 Evolucion del Retraso
@@ -288,7 +288,7 @@ export default function DashboardView({ data, chartRef }) {
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={evolucionRetrasoData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94A3B8" }} angle={-45} textAnchor="end" height={60} interval="preserveStartEnd" />
                   <YAxis
                     domain={[0, 1]}
                     tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
@@ -312,7 +312,7 @@ export default function DashboardView({ data, chartRef }) {
           )}
 
           {tipoData.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6">
+            <div data-chart-wrapper className="bg-white border border-slate-200 rounded-xl p-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-4">
                 Riesgo Promedio por Tipo de Tarea
               </h3>
