@@ -209,7 +209,7 @@ export default function DashboardView({ data, chartRef }) {
         </div>
       </div>
 
-      <div className={tab !== "metrics" ? "hidden" : ""} role="tabpanel">
+      <div className={tab !== "metrics" ? "h-0 overflow-hidden opacity-0" : ""} role="tabpanel">
         <div className="space-y-6" ref={chartRef}>
           <div>
             <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
