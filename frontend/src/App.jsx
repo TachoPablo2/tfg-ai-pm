@@ -38,6 +38,9 @@ export default function App() {
     if (!analysisData || pdfLoading) return;
     setPdfLoading(true);
     try {
+      await new Promise((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(r))
+      );
       const graficos = [];
       if (chartRef.current) {
         const wrappers = chartRef.current.querySelectorAll("[data-chart-wrapper]");
