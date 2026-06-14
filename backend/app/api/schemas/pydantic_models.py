@@ -117,5 +117,12 @@ class AnalysisRequest(BaseModel):
                     f"pero el archivo mezcla tareas de varios proyectos: {proyectos_unicos}. "
                     "Por favor, sube el histórico de un único proyecto."
                 )
+            if len(sprints_unicos) <= 1:
+                raise ValueError(
+                    f"Incongruencia detectada: Has seleccionado análisis de Proyecto, "
+                    f"pero el archivo contiene datos de un único sprint (Sprint_ID={sprints_unicos}). "
+                    "Para analizar un proyecto completo, sube un archivo que incluya "
+                    "tareas de múltiples sprints."
+                )
 
         return self

@@ -99,6 +99,10 @@ class TestAnalysisRequest:
         with pytest.raises(ValidationError, match="varios proyectos"):
             AnalysisRequest(alcance="Proyecto", rol="PMO", tareas=[t1, t2])
 
+    def test_proyecto_with_single_sprint_raises_error(self, sample_tasks):
+        with pytest.raises(ValidationError, match="único sprint"):
+            AnalysisRequest(alcance="Proyecto", rol="PMO", tareas=sample_tasks)
+
     def test_invalid_alcance(self, sample_tasks):
         with pytest.raises(ValidationError):
             AnalysisRequest(alcance="Invalid", rol="Project Manager", tareas=sample_tasks)
